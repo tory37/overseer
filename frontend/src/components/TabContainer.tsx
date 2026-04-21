@@ -8,18 +8,22 @@ interface TabContainerProps {
 
 export const TabContainer = ({ cwd }: TabContainerProps) => {
   return (
-    <div className="flex-1 w-full h-full overflow-hidden">
+    <div className="flex-1 w-full h-full overflow-hidden flex flex-col">
       <Group orientation="horizontal">
         <Panel defaultSize={60} minSize={30}>
-          <div className="h-full w-full">
+          <div className="h-full w-full bg-black/20">
             <Terminal cwd={cwd} />
           </div>
         </Panel>
         
-        <Separator className="w-1 bg-slate-800 hover:bg-blue-500/50 transition-colors cursor-col-resize" />
+        <Separator className="w-1.5 bg-slate-900 border-x border-slate-800/50 hover:bg-blue-600/50 transition-all cursor-col-resize flex items-center justify-center group">
+          <div className="w-[1px] h-8 bg-slate-700 group-hover:bg-blue-400 transition-colors"></div>
+        </Separator>
         
         <Panel defaultSize={40} minSize={20}>
-          <UtilityPane cwd={cwd} />
+          <div className="h-full w-full bg-slate-950/50 border-l border-slate-900">
+            <UtilityPane cwd={cwd} />
+          </div>
         </Panel>
       </Group>
     </div>
