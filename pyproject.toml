@@ -1,18 +1,18 @@
 [project]
-name = "agent-manager"
+name = "overseer"
 version = "0.1.0"
 description = "Unified UI for managing multiple Gemini CLI agent instances"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "fastapi>=0.110.0",
+    "fastapi>=0.109.0",
     "uvicorn>=0.27.0",
     "ptyprocess>=0.7.0",
     "python-multipart>=0.0.9",
 ]
 
 [project.scripts]
-agent-manager = "backend.main:run"
+overseer = "backend.main:run"
 
 [tool.hatch.build.targets.wheel]
 packages = ["backend"]

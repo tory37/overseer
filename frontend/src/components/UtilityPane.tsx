@@ -55,7 +55,7 @@ export const UtilityPane = ({ cwd }: UtilityPaneProps) => {
             <div className="bg-slate-900 p-3 border border-slate-800 rounded">
               <div className="text-blue-400 mb-1 font-bold">AI Summary</div>
               <p className="text-slate-300 leading-relaxed">
-                This project is the "Agent Manager" Overseer UI. 
+                This project is the Overseer UI. 
                 Infrastructure for PTY and Git Worktrees is complete.
                 Currently working on Task 6: UI Polish and Split Panes.
               </p>

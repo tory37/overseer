@@ -5,8 +5,8 @@ import { TabContainer } from './components/TabContainer'
 
 function App() {
   const [tabs] = useState([
-    { id: 1, name: 'Fix Auth Bug', active: true, cwd: '/home/toryhebert/src/agent-manager' },
-    { id: 2, name: 'Add Refactor', active: false, cwd: '/home/toryhebert/src/agent-manager' },
+    { id: 1, name: 'Fix Auth Bug', active: true, cwd: '/home/toryhebert/src/overseer' },
+    { id: 2, name: 'Add Refactor', active: false, cwd: '/home/toryhebert/src/overseer' },
   ])
 
   return (

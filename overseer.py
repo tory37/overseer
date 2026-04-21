@@ -1,5 +1,5 @@
 def main():
-    print("Hello from agent-manager!")
+    print("Hello from overseer!")
 
 
 if __name__ == "__main__":

@@ -1,11 +1,11 @@
-# Agent Manager (Overseer) Design Specification
+# Overseer Design Specification
 
 **Date:** 2026-04-21
 **Status:** Draft (Pending User Review)
 **Topic:** Unified UI for managing multiple Gemini CLI agent instances and repositories.
 
 ## 1. Overview
-The Agent Manager is a desktop-style web application designed to provide a "command center" for developers working with multiple Gemini CLI agents across various repositories. It focuses on seamless repository organization, task-based isolation using Git worktrees, and integrated utility tools for project state visibility.
+Overseer is a desktop-style web application designed to provide a "command center" for developers working with multiple Gemini CLI agents across various repositories. It focuses on seamless repository organization, task-based isolation using Git worktrees, and integrated utility tools for project state visibility.
 
 ## 2. Core Architecture
 - **Frontend:** React (TypeScript) SPA.
@@ -13,9 +13,9 @@ The Agent Manager is a desktop-style web application designed to provide a "comm
   - **Terminal:** `xterm.js` for high-performance terminal emulation.
 - **Backend:** Python (FastAPI).
   - **Process Management:** Uses `pypty` or similar to manage PTYs for Gemini CLI and shell instances.
-  - **Storage:** Simple JSON-based persistence at `~/.agent-manager.json`.
+  - **Storage:** Simple JSON-based persistence at `~/.overseer.json`.
   - **Worktree Management:** Automates `git worktree` via shell commands.
-  - **Distribution:** Packaged as a Python project to support `uvx` (e.g., `uvx --from git+... agent-manager`). The backend serves the pre-built React frontend assets.
+  - **Distribution:** Packaged as a Python project to support `uvx` (e.g., `uvx --from git+... overseer`). The backend serves the pre-built React frontend assets.
 
 ## 3. Key Features
 
@@ -27,8 +27,7 @@ The Agent Manager is a desktop-style web application designed to provide a "comm
 ### 3.2 Task-Based Isolation (Tabs)
 - **Multi-Instance Support:** Ability to open multiple independent "tabs" for a single repository.
 - **Managed Worktrees:**
-  - Option to start a "New Task" which creates a managed `git worktree` in a cache directory (`~/.agent-manager/worktrees/`).
-  - Ensures isolation between parallel branches/tickets without cluttering the main project directory.
+  - Option to start a "New Task" which creates a managed `git worktree` in a cache directory (`~/.overseer/worktrees/`).  - Ensures isolation between parallel branches/tickets without cluttering the main project directory.
 - **Lifecycle Management:** Start, stop, and restart agent processes per tab. Tabs persist their metadata (name, path, branch) even when the process is stopped.
 
 ### 3.3 Integrated Workspace (Split-Pane View)

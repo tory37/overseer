@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 
-CONFIG_PATH = Path.home() / ".agent-manager.json"
+CONFIG_PATH = Path.home() / ".overseer.json"
 
 class Repo(BaseModel):
     id: str
