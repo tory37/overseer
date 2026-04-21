@@ -97,14 +97,7 @@
 - Modify: `pyproject.toml`
 - Create: `backend/scripts/build_frontend.py`
 
-- [ ] **Step 1: Add build script to compile React and move assets to `backend/static`**
-  Ensure FastAPI is configured to serve these static files.
-
-- [ ] **Step 2: Define entry point in `pyproject.toml`**
-  `agent-manager = "backend.main:run"`
-
-- [ ] **Step 3: Verify "Production" run**
-  Run: `uv run agent-manager` (should work without a separate frontend server).
-
-- [ ] **Step 4: Commit**
-  `git add . && git commit -m "chore: package for uvx distribution"`
+- [x] **Step 1: Add build script to compile React and move assets to `backend/static`**
+- [x] **Step 2: Define entry point in `pyproject.toml`**
+- [x] **Step 3: Verify "Production" run**
+- [x] **Step 4: Commit**
