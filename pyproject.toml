@@ -1,0 +1,19 @@
+[project]
+name = "agent-manager"
+version = "0.1.0"
+description = "Unified UI for managing multiple Gemini CLI agent instances"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "ptyprocess>=0.7.0",
+    "python-multipart>=0.0.9",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
