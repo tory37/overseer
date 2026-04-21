@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost } from 'lucide-react'
+import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost, Rocket } from 'lucide-react'
 import { Sidebar } from './components/Sidebar'
 import { TabContainer } from './components/TabContainer'
 
@@ -12,11 +12,39 @@ interface Tab {
 
 function App() {
   const [tabs, setTabs] = useState<Tab[]>([])
+  const [showTaskModal, setShowTaskModal] = useState<{repoId: string, repoName: string} | null>(null)
+  const [taskName, setTaskName] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
 
   const openTab = (name: string, path: string) => {
     const id = Math.random().toString(36).substring(7)
     const newTabs = tabs.map(t => ({ ...t, active: false }))
     setTabs([...newTabs, { id, name, cwd: path, active: true }])
+  }
+
+  const handleStartTask = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!taskName || !showTaskModal) return
+
+    setIsCreating(true)
+    try {
+      const res = await fetch(`http://localhost:8000/api/worktrees?repo_id=${showTaskModal.repoId}&task_name=${encodeURIComponent(taskName)}`, {
+        method: 'POST'
+      })
+      const data = await res.json()
+      
+      if (data.status === 'ok') {
+        openTab(`${showTaskModal.repoName}: ${taskName}`, data.path)
+        setShowTaskModal(null)
+        setTaskName('')
+      } else {
+        alert(data.error || "Failed to create task environment")
+      }
+    } catch (err) {
+      console.error("Task creation error:", err)
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   const closeTab = (id: string, e: React.MouseEvent) => {
@@ -34,7 +62,7 @@ function App() {
 
   return (
     <div className="flex h-screen w-full bg-slate-950 text-slate-200 font-sans overflow-hidden">
-      <Sidebar onSelectRepo={(repo) => openTab(repo.name, repo.path)} />
+      <Sidebar onSelectRepo={(repo) => setShowTaskModal({ repoId: repo.id, repoName: repo.name })} />
 
       {/* Main Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-slate-950">
@@ -109,6 +137,75 @@ function App() {
           )}
         </div>
       </main>
+
+      {/* Task Initiation Modal */}
+      {showTaskModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/30">
+              <div className="flex items-center gap-2">
+                <Rocket className="w-4 h-4 text-orange-500" />
+                <h3 className="font-bold text-slate-100">Initialize New Task</h3>
+              </div>
+              <button 
+                onClick={() => setShowTaskModal(null)} 
+                className="p-1.5 rounded-full hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleStartTask} className="p-6 space-y-5">
+              <div className="bg-blue-600/5 border border-blue-500/10 rounded-xl p-3">
+                <p className="text-[10px] text-blue-400 font-bold uppercase mb-1">Target Repository</p>
+                <p className="text-sm text-slate-300 font-medium">{showTaskModal.repoName}</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Task Name / Description</label>
+                <input 
+                  autoFocus
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-600/50 focus:border-blue-500 transition-all placeholder:text-slate-700"
+                  placeholder="e.g. fix-auth-logic"
+                  value={taskName}
+                  onChange={e => setTaskName(e.target.value)}
+                />
+              </div>
+              
+              <div className="p-3 bg-slate-950/50 rounded-lg border border-slate-800/50">
+                <div className="flex items-start gap-2">
+                  <Ghost className="w-3.5 h-3.5 text-slate-600 mt-0.5" />
+                  <p className="text-[10px] text-slate-500 leading-tight">
+                    This will create a dedicated <span className="text-slate-300">Git worktree</span> for this task. 
+                    Changes won't affect your main directory until you're ready.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setShowTaskModal(null)}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold text-slate-300 transition-all active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={!taskName || isCreating}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold text-white shadow-lg shadow-orange-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  {isCreating ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <>Start Task</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

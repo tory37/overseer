@@ -69,6 +69,26 @@ async def add_group(group: Group):
     store.add_group(group)
     return {"status": "ok"}
 
+@app.post("/api/worktrees")
+async def create_worktree(repo_id: str, task_name: str):
+    repos = store.get_all().get("repos", [])
+    repo = next((r for r in repos if r.id == repo_id), None)
+    if not repo:
+        return {"error": "Repo not found"}
+    
+    # Safe folder name from task name
+    safe_name = "".join([c if c.isalnum() else "-" for c in task_name]).lower()
+    worktree_id = f"{safe_name}-{os.urandom(4).hex()}"
+    worktree_path = os.path.expanduser(f"~/.overseer/worktrees/{worktree_id}")
+    
+    os.makedirs(os.path.dirname(worktree_path), exist_ok=True)
+    
+    success = GitManager.add_worktree(repo.path, worktree_path)
+    if success:
+        return {"status": "ok", "path": worktree_path}
+    else:
+        return {"error": "Failed to create worktree"}
+
 @app.websocket("/ws/terminal")
 async def terminal_websocket(
     websocket: WebSocket, 
