@@ -2,8 +2,10 @@ import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from .pty_manager import PtyManager
+from .store import Store, Repo, Group
 
 app = FastAPI()
+store = Store()
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,6 +19,20 @@ app.add_middleware(
 async def health():
     return {"status": "ok"}
 
+@app.get("/api/config")
+async def get_config():
+    return store.get_all()
+
+@app.post("/api/repos")
+async def add_repo(repo: Repo):
+    store.add_repo(repo)
+    return {"status": "ok"}
+
+@app.post("/api/groups")
+async def add_group(group: Group):
+    store.add_group(group)
+    return {"status": "ok"}
+
 @app.websocket("/ws/terminal")
 async def terminal_websocket(websocket: WebSocket):
     await websocket.accept()
@@ -27,7 +43,6 @@ async def terminal_websocket(websocket: WebSocket):
     async def pty_to_ws():
         try:
             while pty.is_alive():
-                # Run blocking read in a thread
                 data = await asyncio.to_thread(pty.read)
                 if data:
                     await websocket.send_text(data.decode(errors='replace'))
@@ -46,5 +61,4 @@ async def terminal_websocket(websocket: WebSocket):
             print(f"WS to PTY error: {e}")
             pty.stop()
 
-    # Run both tasks concurrently
     await asyncio.gather(pty_to_ws(), ws_to_pty())
