@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Terminal as TerminalIcon, Plus } from 'lucide-react'
-import { Terminal } from './components/Terminal'
 import { Sidebar } from './components/Sidebar'
+import { TabContainer } from './components/TabContainer'
 
 function App() {
   const [tabs] = useState([
-    { id: 1, name: 'Fix Auth Bug', active: true },
-    { id: 2, name: 'Add Refactor', active: false },
+    { id: 1, name: 'Fix Auth Bug', active: true, cwd: '/home/toryhebert/src/agent-manager' },
+    { id: 2, name: 'Add Refactor', active: false, cwd: '/home/toryhebert/src/agent-manager' },
   ])
 
   return (
@@ -35,26 +35,9 @@ function App() {
 
         {/* Content View */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Main Terminal Pane */}
-          <div className="flex-1 min-w-0 border-r border-slate-800">
-            <Terminal />
-          </div>
-
-          {/* Utility Pane (Placeholder) */}
-          <div className="w-[400px] bg-slate-950 flex flex-col">
-            <div className="p-2 border-b border-slate-800 flex gap-2">
-              <button className="px-3 py-1 bg-slate-800 rounded text-xs font-medium text-blue-400">SHELL</button>
-              <button className="px-3 py-1 hover:bg-slate-800 rounded text-xs font-medium text-slate-400">GIT</button>
-              <button className="px-3 py-1 hover:bg-slate-800 rounded text-xs font-medium text-slate-400">INSPECTOR</button>
-            </div>
-            <div className="flex-1 p-4 font-mono text-xs text-slate-500">
-              $ git status<br />
-              On branch main<br />
-              Your branch is up to date with 'origin/main'.<br />
-              <br />
-              nothing to commit, working tree clean
-            </div>
-          </div>
+          {tabs.filter(t => t.active).map(tab => (
+            <TabContainer key={tab.id} cwd={tab.cwd} />
+          ))}
         </div>
       </main>
     </div>
