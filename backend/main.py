@@ -1,8 +1,10 @@
 import asyncio
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from typing import Optional
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from .pty_manager import PtyManager
 from .store import Store, Repo, Group
+from .git_utils import GitManager
 
 app = FastAPI()
 store = Store()
@@ -34,10 +36,14 @@ async def add_group(group: Group):
     return {"status": "ok"}
 
 @app.websocket("/ws/terminal")
-async def terminal_websocket(websocket: WebSocket):
+async def terminal_websocket(
+    websocket: WebSocket, 
+    cwd: Optional[str] = Query(None)
+):
     await websocket.accept()
     
-    pty = PtyManager()
+    # Use specified directory or fall back to default
+    pty = PtyManager(cwd=cwd)
     pty.start()
 
     async def pty_to_ws():

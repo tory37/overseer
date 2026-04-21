@@ -3,7 +3,11 @@ import { Terminal as Xterm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 
-export const Terminal = () => {
+interface TerminalProps {
+  cwd?: string;
+}
+
+export const Terminal = ({ cwd }: TerminalProps) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Xterm | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -28,8 +32,13 @@ export const Terminal = () => {
     term.open(terminalRef.current);
     fitAddon.fit();
 
-    // Setup WebSocket
-    const ws = new WebSocket('ws://localhost:8000/ws/terminal');
+    // Setup WebSocket with optional CWD
+    const wsUrl = new URL('ws://localhost:8000/ws/terminal');
+    if (cwd) {
+      wsUrl.searchParams.append('cwd', cwd);
+    }
+    
+    const ws = new WebSocket(wsUrl.toString());
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
@@ -55,7 +64,7 @@ export const Terminal = () => {
       ws.close();
       term.dispose();
     };
-  }, []);
+  }, [cwd]);
 
   return (
     <div className="w-full h-full bg-slate-900 overflow-hidden">
