@@ -1,0 +1,32 @@
+<h2>Design: Task Lifecycle & Isolation</h2>
+<p class="subtitle">Managing parallel work without the mess</p>
+
+<div class="options">
+  <div class="option" data-choice="instance-card" style="cursor: default; border-color: #4a9eff;">
+    <div class="content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0;">Task: "Auth Refactor"</h3>
+        <span style="background: #1a4a1a; color: #4f4; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem;">RUNNING</span>
+      </div>
+      <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">
+        <b>Path:</b> <code>~/.../worktrees/agent-manager/auth-refactor</code><br/>
+        <b>Branch:</b> <code>feature/new-auth-system</code>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button style="background: #333; border: 1px solid #555; color: white; padding: 5px 10px; font-size: 0.7rem;">STOP AGENT</button>
+        <button style="background: #333; border: 1px solid #555; color: white; padding: 5px 10px; font-size: 0.7rem;">RENAME TAB</button>
+        <button style="background: #4a1a1a; border: 1px solid #633; color: #f66; padding: 5px 10px; font-size: 0.7rem;">DELETE & CLEANUP</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options" style="margin-top: 20px;">
+  <div class="option" data-choice="approved" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>Logic Approved</h3>
+      <p>The worktree management and lifecycle look sound.</p>
+    </div>
+  </div>
+</div>

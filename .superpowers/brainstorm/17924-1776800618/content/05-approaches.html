@@ -1,0 +1,29 @@
+<h2>Architectural Approaches</h2>
+<p class="subtitle">How should the "Overseer" feel and behave?</p>
+
+<div class="options">
+  <div class="option" data-choice="command-center" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>The Command Center</h3>
+      <p><b>Layout:</b> Flexible Grid.</p>
+      <p>Dashboard feel. Drag and drop terminals and tools into a custom grid. Great for multi-monitor or ultra-wide setups.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="ide-workspace" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>The IDE-like Workspace (Recommended)</h3>
+      <p><b>Layout:</b> Sidebar + Split-Pane Tabs.</p>
+      <p>Familiar and focused. Sidebar for repo organization; Center area for agent "tabs" with a toggleable secondary view (Shell/Git).</p>
+    </div>
+  </div>
+  <div class="option" data-choice="orchestrator" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>The Process Orchestrator</h3>
+      <p><b>Layout:</b> List/Tree Focused.</p>
+      <p>Optimized for volume. A dense tree of all active agents and their status. One-click to "maximize" a specific instance's terminal.</p>
+    </div>
+  </div>
+</div>

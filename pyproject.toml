@@ -11,6 +11,9 @@ dependencies = [
     "python-multipart>=0.0.9",
 ]
 
+[project.scripts]
+agent-manager = "backend.main:run"
+
 [tool.hatch.build.targets.wheel]
 packages = ["backend"]
 

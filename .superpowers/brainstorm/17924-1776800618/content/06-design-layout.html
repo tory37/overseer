@@ -1,0 +1,45 @@
+<h2>Design: IDE-like Workspace Layout</h2>
+<p class="subtitle">Structural overview of the Overseer UI</p>
+
+<div style="display: grid; grid-template-columns: 200px 1fr; gap: 10px; height: 300px; border: 1px solid #444; padding: 10px; background: #1a1a1a;">
+  <!-- Sidebar -->
+  <div style="border-right: 1px solid #333; padding: 5px;">
+    <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">REPOS</div>
+    <div style="font-size: 0.8rem; margin-bottom: 5px;">📁 Active</div>
+    <div style="font-size: 0.8rem; padding-left: 10px; margin-bottom: 5px;">repo-alpha</div>
+    <div style="font-size: 0.8rem; padding-left: 10px; margin-bottom: 5px; color: #4a9eff;">repo-beta</div>
+    <div style="font-size: 0.8rem; margin-bottom: 5px;">📁 Side Projects</div>
+  </div>
+  
+  <!-- Main Content -->
+  <div style="display: flex; flex-direction: column;">
+    <!-- Tabs -->
+    <div style="display: flex; gap: 2px; background: #222; padding: 2px 0;">
+      <div style="padding: 4px 12px; background: #1a1a1a; font-size: 0.8rem; border-top: 2px solid #4a9eff;">Fix Auth Bug</div>
+      <div style="padding: 4px 12px; background: #333; font-size: 0.8rem;">Add Refactor</div>
+      <div style="padding: 4px 12px; background: #222; font-size: 0.8rem; color: #666;">+</div>
+    </div>
+    
+    <!-- Split Panes -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; flex-grow: 1; padding-top: 5px;">
+      <div style="background: #000; border: 1px solid #333; padding: 10px; font-family: monospace; font-size: 0.7rem;">
+        <span style="color: #0f0;">gemini></span> I'll start by...
+      </div>
+      <div style="background: #000; border: 1px solid #333; padding: 10px; font-family: monospace; font-size: 0.7rem;">
+        <div style="border-bottom: 1px solid #222; margin-bottom: 5px; color: #666;">SHELL | GIT</div>
+        <span style="color: #aaa;">$ git status</span><br/>
+        On branch fix-auth-bug...
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options" style="margin-top: 20px;">
+  <div class="option" data-choice="approved" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>Layout Approved</h3>
+      <p>This structure looks perfect. Let's move to the next section.</p>
+    </div>
+  </div>
+</div>

@@ -1,7 +1,10 @@
 import asyncio
+import os
+import uvicorn
 from typing import Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from .pty_manager import PtyManager
 from .store import Store, Repo, Group
 from .git_utils import GitManager
@@ -41,8 +44,6 @@ async def terminal_websocket(
     cwd: Optional[str] = Query(None)
 ):
     await websocket.accept()
-    
-    # Use specified directory or fall back to default
     pty = PtyManager(cwd=cwd)
     pty.start()
 
@@ -68,3 +69,14 @@ async def terminal_websocket(
             pty.stop()
 
     await asyncio.gather(pty_to_ws(), ws_to_pty())
+
+# Static files serving (for production)
+static_path = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_path):
+    app.mount("/", StaticFiles(directory=static_path, html=True), name="static")
+
+def run():
+    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000)
+
+if __name__ == "__main__":
+    run()

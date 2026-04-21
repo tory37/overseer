@@ -1,0 +1,21 @@
+<h2>Concept: Easy Running</h2>
+<p class="subtitle">How do you want to launch the Overseer?</p>
+
+<div class="options">
+  <div class="option" data-choice="uvx" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>The "uvx" Way (Python)</h3>
+      <p><code>uvx --from git+... agent-manager</code></p>
+      <p>Super fast, Python-based backend. Great if you're already using <code>uv</code> for everything.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="npx" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>The "npx" Way (Node)</h3>
+      <p><code>npx agent-manager</code></p>
+      <p>Standard Node.js experience. Keeps the whole project in TypeScript.</p>
+    </div>
+  </div>
+</div>
