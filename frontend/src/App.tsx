@@ -10,6 +10,14 @@ interface Tab {
   active: boolean
 }
 
+// Utility to get the base API URL
+export const getBaseUrl = () => {
+  if (window.location.host === 'localhost:5173') {
+    return 'http://localhost:8000';
+  }
+  return ''; // Relative to same host in production
+};
+
 function App() {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [showTaskModal, setShowTaskModal] = useState<{repoId: string, repoName: string} | null>(null)
@@ -28,7 +36,8 @@ function App() {
 
     setIsCreating(true)
     try {
-      const res = await fetch(`http://localhost:8000/api/worktrees?repo_id=${showTaskModal.repoId}&task_name=${encodeURIComponent(taskName)}`, {
+      const baseUrl = getBaseUrl();
+      const res = await fetch(`${baseUrl}/api/worktrees?repo_id=${showTaskModal.repoId}&task_name=${encodeURIComponent(taskName)}`, {
         method: 'POST'
       })
       const data = await res.json()

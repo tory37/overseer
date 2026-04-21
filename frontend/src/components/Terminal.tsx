@@ -32,17 +32,30 @@ export const Terminal = ({ cwd }: TerminalProps) => {
     term.open(terminalRef.current);
     fitAddon.fit();
 
-    // Setup WebSocket with optional CWD
-    const wsUrl = new URL('ws://localhost:8000/ws/terminal');
+    // Determine WebSocket URL based on current location
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host === 'localhost:5173' ? 'localhost:8000' : window.location.host;
+    const wsUrl = new URL(`${protocol}//${host}/ws/terminal`);
+    
     if (cwd) {
       wsUrl.searchParams.append('cwd', cwd);
     }
     
+    console.log(`Connecting to WebSocket: ${wsUrl.toString()}`);
     const ws = new WebSocket(wsUrl.toString());
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
       term.write(event.data);
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket Error:', error);
+      term.write('\r\n\x1b[31m[Overseer] Connection error. Is the backend running?\x1b[0m\r\n');
+    };
+
+    ws.onclose = () => {
+      term.write('\r\n\x1b[33m[Overseer] Connection closed.\x1b[0m\r\n');
     };
 
     term.onData((data) => {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Folder, Search, Settings, Plus, X, GitBranch, Terminal, ChevronRight, FolderOpen, Home } from 'lucide-react'
+import { getBaseUrl } from '../App'
 
 interface Repo {
   id: string
@@ -30,7 +31,7 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
   const [showBrowser, setShowBrowser] = useState(false)
 
   const refresh = () => {
-    fetch('http://localhost:8000/api/config')
+    fetch(`${getBaseUrl()}/api/config`)
       .then(res => res.json())
       .then(data => {
         setRepos(data.repos || [])
@@ -40,7 +41,7 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
   }
 
   const loadBrowser = (path: string = '') => {
-    const url = `http://localhost:8000/api/ls?path=${encodeURIComponent(path)}`
+    const url = `${getBaseUrl()}/api/ls?path=${encodeURIComponent(path)}`
     fetch(url)
       .then(res => res.json())
       .then(data => {
@@ -72,7 +73,7 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
     }
 
     try {
-      await fetch('http://localhost:8000/api/repos', {
+      await fetch(`${getBaseUrl()}/api/repos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(repo)
