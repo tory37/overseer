@@ -3,13 +3,10 @@ import { Terminal as Xterm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 
-interface TerminalProps {
-  onData?: (data: string) => void;
-}
-
-export const Terminal = ({ onData }: TerminalProps) => {
+export const Terminal = () => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Xterm | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -22,6 +19,7 @@ export const Terminal = ({ onData }: TerminalProps) => {
       },
       fontFamily: '"Fira Code", monospace',
       fontSize: 14,
+      cursorBlink: true,
     });
 
     const fitAddon = new FitAddon();
@@ -30,8 +28,18 @@ export const Terminal = ({ onData }: TerminalProps) => {
     term.open(terminalRef.current);
     fitAddon.fit();
 
+    // Setup WebSocket
+    const ws = new WebSocket('ws://localhost:8000/ws/terminal');
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      term.write(event.data);
+    };
+
     term.onData((data) => {
-      onData?.(data);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(data);
+      }
     });
 
     xtermRef.current = term;
@@ -44,9 +52,10 @@ export const Terminal = ({ onData }: TerminalProps) => {
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      ws.close();
       term.dispose();
     };
-  }, [onData]);
+  }, []);
 
   return (
     <div className="w-full h-full bg-slate-900 overflow-hidden">
