@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Folder, Search, Settings, Plus, X, GitBranch, Terminal } from 'lucide-react'
+import { Folder, Search, Settings, Plus, X, GitBranch, Terminal, ChevronRight, FolderOpen, Home } from 'lucide-react'
 
 interface Repo {
   id: string
@@ -23,6 +23,11 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
   const [groups, setGroups] = useState<Group[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
   const [newRepo, setNewRepo] = useState({ name: '', path: '' })
+  
+  // Browser state
+  const [browserEntries, setBrowserEntries] = useState<{name: string, path: string, is_dir: boolean}[]>([])
+  const [currentBrowserPath, setCurrentBrowserPath] = useState('')
+  const [showBrowser, setShowBrowser] = useState(false)
 
   const refresh = () => {
     fetch('http://localhost:8000/api/config')
@@ -34,9 +39,27 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
       .catch(err => console.error("Failed to fetch config:", err))
   }
 
+  const loadBrowser = (path: string = '') => {
+    const url = `http://localhost:8000/api/ls?path=${encodeURIComponent(path)}`
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data.entries) {
+          setBrowserEntries(data.entries)
+          setCurrentBrowserPath(data.current_path)
+        }
+      })
+  }
+
   useEffect(() => {
     refresh()
   }, [])
+
+  useEffect(() => {
+    if (showBrowser) {
+      loadBrowser(currentBrowserPath)
+    }
+  }, [showBrowser])
 
   const handleAddRepo = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,10 +79,16 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
       })
       setNewRepo({ name: '', path: '' })
       setShowAddModal(false)
+      setShowBrowser(false)
       refresh()
     } catch (err) {
       console.error("Failed to add repo:", err)
     }
+  }
+
+  const selectPathFromBrowser = (path: string) => {
+    setNewRepo(prev => ({ ...prev, path }))
+    setShowBrowser(false)
   }
 
   return (
@@ -72,7 +101,7 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
         <h1 className="font-bold text-lg tracking-tight text-slate-100">Overseer</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 space-y-4 no-scrollbar">
         {/* Repo Section */}
         <section>
           <div className="flex items-center justify-between px-2 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.1em]">
@@ -178,16 +207,55 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
               
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Local Directory Path</label>
-                <div className="relative">
+                <div className="relative group/path">
                   <input 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-600/50 focus:border-blue-500 transition-all placeholder:text-slate-700 font-mono"
-                    placeholder="/home/user/src/project"
+                    readOnly
+                    onClick={() => setShowBrowser(!showBrowser)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-10 text-sm text-white focus:outline-none cursor-pointer hover:border-slate-600 transition-all placeholder:text-slate-700 font-mono"
+                    placeholder="Click to browse..."
                     value={newRepo.path}
-                    onChange={e => setNewRepo({...newRepo, path: e.target.value})}
                   />
-                  <Folder className="absolute right-4 top-3.5 w-4 h-4 text-slate-700" />
+                  <div className="absolute right-3 top-3 p-1 rounded hover:bg-slate-800 text-slate-500 group-hover/path:text-blue-500 transition-colors">
+                    <FolderOpen className="w-4 h-4" />
+                  </div>
                 </div>
-                <p className="text-[10px] text-slate-600 px-1">Ensure this is an absolute path to a Git repository.</p>
+
+                {/* Directory Browser Sub-Modal/Dropdown */}
+                {showBrowser && (
+                  <div className="mt-2 bg-slate-950 border border-slate-800 rounded-xl max-h-64 overflow-hidden flex flex-col shadow-2xl animate-in fade-in slide-in-from-top-2">
+                    <div className="p-2 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 px-2 overflow-hidden">
+                        <Home className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{currentBrowserPath || 'Root'}</span>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => selectPathFromBrowser(currentBrowserPath)}
+                        className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-500 text-[10px] font-bold text-white uppercase"
+                      >
+                        Select
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto no-scrollbar p-1">
+                      {browserEntries.map((entry) => (
+                        <div 
+                          key={entry.path}
+                          onClick={() => entry.name === '..' ? loadBrowser(entry.path) : loadBrowser(entry.path)}
+                          className="flex items-center justify-between p-2 rounded hover:bg-slate-800 cursor-pointer transition-colors group/entry"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Folder className={`w-4 h-4 ${entry.name === '..' ? 'text-slate-600' : 'text-blue-500/60'}`} />
+                            <span className={`text-xs ${entry.name === '..' ? 'text-slate-500' : 'text-slate-300'}`}>
+                              {entry.name}
+                            </span>
+                          </div>
+                          <ChevronRight className="w-3 h-3 text-slate-700 opacity-0 group-hover/entry:opacity-100 transition-all" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <p className="text-[10px] text-slate-600 px-1">Ensure this directory is a valid Git repository.</p>
               </div>
 
               <div className="pt-4 flex gap-3">

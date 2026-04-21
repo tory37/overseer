@@ -33,6 +33,37 @@ async def add_repo(repo: Repo):
     store.add_repo(repo)
     return {"status": "ok"}
 
+@app.get("/api/ls")
+async def list_dir(path: str = Query(".")):
+    """List directories for the path browser."""
+    try:
+        abs_path = os.path.abspath(os.path.expanduser(path))
+        if not os.path.exists(abs_path):
+            return {"error": "Path does not exist", "entries": []}
+        
+        entries = []
+        # Add parent directory option if not at root
+        parent = os.path.dirname(abs_path)
+        if parent != abs_path:
+            entries.append({"name": "..", "path": parent, "is_dir": True})
+
+        for entry in os.scandir(abs_path):
+            try:
+                if entry.is_dir() and not entry.name.startswith('.'):
+                    entries.append({
+                        "name": entry.name,
+                        "path": entry.path,
+                        "is_dir": True
+                    })
+            except OSError:
+                continue
+        
+        # Sort by name
+        entries.sort(key=lambda x: x["name"].lower())
+        return {"current_path": abs_path, "entries": entries}
+    except Exception as e:
+        return {"error": str(e), "entries": []}
+
 @app.post("/api/groups")
 async def add_group(group: Group):
     store.add_group(group)
