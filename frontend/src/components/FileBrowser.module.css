@@ -1,0 +1,52 @@
+/* frontend/src/components/FileBrowser.module.css */
+.fileBrowser {
+    border: 1px solid #ccc;
+    padding: 10px;
+    height: 400px; /* Example height */
+    overflow-y: auto;
+    background-color: #f9f9f9;
+}
+
+.pathBar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.pathBar button {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.fileList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.fileList li {
+    padding: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.fileList li:hover {
+    background-color: #e0e0e0;
+}
+
+.directory {
+    font-weight: bold;
+    color: #0056b3;
+}
+
+.file {
+    color: #333;
+}
+
+.loading, .error {
+    text-align: center;
+    padding: 20px;
+    color: #d32f2f;
+}
