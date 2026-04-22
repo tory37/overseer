@@ -20,7 +20,7 @@ store = Store()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -80,8 +80,7 @@ async def add_group(group: Group):
 
 @app.post("/api/worktrees")
 async def create_worktree(repo_id: str, task_name: str):
-    repos = store.get_all().get("repos", [])
-    repo = next((r for r in repos if r.id == repo_id), None)
+    repo = next((r for r in store.config.repos if r.id == repo_id), None)
     if not repo:
         return {"error": "Repo not found"}
     
@@ -121,8 +120,15 @@ async def terminal_websocket(
     command: Optional[str] = Query("/bin/bash")
 ):
     await websocket.accept()
+    print(f"DEBUG: Starting PTY with command='{command}' cwd='{cwd}'")
     pty = PtyManager(cwd=cwd, command=command)
-    pty.start()
+    try:
+        pty.start()
+    except Exception as e:
+        print(f"DEBUG: Failed to start PTY: {e}")
+        await websocket.send_text(f"\r\n[Overseer] Failed to start process: {e}\r\n")
+        await websocket.close()
+        return
 
     async def pty_to_ws():
         try:
@@ -131,8 +137,13 @@ async def terminal_websocket(
                 if data:
                     await websocket.send_text(data.decode(errors='replace'))
                 await asyncio.sleep(0.01)
+            print("DEBUG: PTY process exited")
+            await websocket.send_text("\r\n[Overseer] Process exited.\r\n")
         except Exception as e:
             print(f"PTY to WS error: {e}")
+        finally:
+            if websocket.client_state.name != 'DISCONNECTED':
+                await websocket.close()
 
     async def ws_to_pty():
         try:
@@ -140,6 +151,7 @@ async def terminal_websocket(
                 data = await websocket.receive_text()
                 pty.write(data)
         except WebSocketDisconnect:
+            print("DEBUG: WebSocket disconnected by client")
             pty.stop()
         except Exception as e:
             print(f"WS to PTY error: {e}")

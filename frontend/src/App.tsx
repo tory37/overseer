@@ -20,11 +20,9 @@ interface Tab {
 
 // Utility to get the base API URL
 export const getBaseUrl = () => {
-  // During development, explicitly target the backend port
-  if (import.meta.env.DEV) { // Vite provides import.meta.env.DEV for development mode
-    return 'http://localhost:8000';
-  }
-  return ''; // Relative to same host in production
+  // Use relative URLs and let Vite proxy handle it during development,
+  // or use relative URLs in production (same host).
+  return '';
 };
 
 function App() {
@@ -53,10 +51,11 @@ function App() {
       const data = await res.json()
       
       if (data.status === 'ok') {
-        openTab(`${selectedRepo.name}: ${taskName}`, data.path, 'gemini')
+        openTab(`${selectedRepo.name}: ${taskName}`, data.path, 'gemini --approval-mode yolo')
         setShowTaskModal(false)
         setTaskName('')
-      } else {
+      }
+ else {
         alert(data.error || "Failed to create task environment")
       }
     } catch (err) {

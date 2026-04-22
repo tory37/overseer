@@ -35,7 +35,7 @@ export const Terminal = ({ cwd, command }: TerminalProps) => {
 
     // Determine WebSocket URL based on current location
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host === 'localhost:5173' ? 'localhost:8000' : window.location.host;
+    const host = window.location.host;
     const wsUrl = new URL(`${protocol}//${host}/ws/terminal`);
     
     if (cwd) {

@@ -1,10 +1,20 @@
 import os
 import shlex
+import shutil
 from ptyprocess import PtyProcess
 
 class PtyManager:
     def __init__(self, command: str = "/bin/bash", cwd: str = None):
-        self.command = shlex.split(command)
+        if isinstance(command, str):
+            args = shlex.split(command)
+        else:
+            args = command
+            
+        executable = shutil.which(args[0])
+        if executable:
+            args[0] = executable
+            
+        self.command = args
         self.cwd = cwd or os.getcwd()
         self.process = None
 
