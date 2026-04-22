@@ -3,6 +3,7 @@ import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost, Rocket, Check, G
 import { Sidebar } from './components/Sidebar'
 import { TabContainer } from './components/TabContainer'
 import FileBrowser from './components/FileBrowser'; // Import FileBrowser
+import Modal from './components/Modal'; // Import Modal
 
 interface Repo {
   id: string
@@ -21,7 +22,8 @@ interface Tab {
 
 // Utility to get the base API URL
 export const getBaseUrl = () => {
-  if (window.location.host === 'localhost:5173') {
+  // During development, explicitly target the backend port
+  if (import.meta.env.DEV) { // Vite provides import.meta.env.DEV for development mode
     return 'http://localhost:8000';
   }
   return ''; // Relative to same host in production
@@ -33,6 +35,16 @@ function App() {
   const [showTaskModal, setShowTaskModal] = useState(false)
   const [taskName, setTaskName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [selectedPath, setSelectedPath] = useState<string>(''); // State for FileBrowser selected path
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false); // State for modal
+
+  const handlePathSelected = (path: string) => {
+    console.log("Selected path:", path);
+    setSelectedPath(path);
+  };
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
 
   const openTab = (name: string, path: string, command?: string) => {
     const id = Math.random().toString(36).substring(7)
@@ -247,6 +259,16 @@ function App() {
         <h2>File Browser Test</h2>
         <p>Selected: {selectedPath}</p>
         <FileBrowser onSelectPath={handlePathSelected} initialPath="/" />
+      </div>
+
+      {/* Modal Test Area */}
+      <div style={{ padding: '20px', borderTop: '1px solid #eee', backgroundColor: '#1e293b' }}>
+        <h2>Modal Test</h2>
+        <button onClick={openModal} style={{ padding: '10px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Open Test Modal</button>
+        <Modal isOpen={isModalOpen} onClose={closeModal} title="Test Modal">
+          <p>This is some content inside the modal. The selected path is: <strong>{selectedPath}</strong></p>
+          <FileBrowser onSelectPath={handlePathSelected} initialPath={selectedPath || '/'} />
+        </Modal>
       </div>
 
       {/* Task Initiation Modal */}
