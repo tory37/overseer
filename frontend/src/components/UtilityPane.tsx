@@ -1,20 +1,45 @@
-import { useState } from 'react'
-import { Shell, GitBranch, Info, Activity } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Shell, GitBranch, Info, Activity, RefreshCw } from 'lucide-react'
+import { getBaseUrl } from '../App'
 
 interface UtilityPaneProps {
   cwd?: string
 }
 
 export const UtilityPane = ({ cwd }: UtilityPaneProps) => {
-  const [mode, setMode] = useState<'SHELL' | 'GIT' | 'INSPECTOR'>('INSPECTOR')
+  const [mode, setMode] = useState<'SHELL' | 'GIT' | 'INSPECTOR'>('GIT')
+  const [gitStatus, setGitStatus] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+
+  const fetchGitStatus = async () => {
+    if (!cwd) return
+    setLoading(true)
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/git/status?cwd=${encodeURIComponent(cwd)}`)
+      const data = await res.json()
+      if (data.status === 'ok') {
+        setGitStatus(data.output)
+      } else {
+        setGitStatus(`Error: ${data.message}`)
+      }
+    } catch (err) {
+      setGitStatus('Failed to fetch git status')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchGitStatus()
+  }, [cwd])
 
   return (
     <div className="flex flex-col h-full bg-slate-900/20">
       {/* Mode Switcher */}
       <div className="flex bg-slate-950/80 border-b border-slate-800/60 p-1 gap-1">
         {[
-          { id: 'INSPECTOR', icon: Info, label: 'Inspector' },
           { id: 'GIT', icon: GitBranch, label: 'Git' },
+          { id: 'INSPECTOR', icon: Info, label: 'Inspector' },
           { id: 'SHELL', icon: Shell, label: 'Shell' },
         ].map((item) => (
           <button
@@ -59,8 +84,8 @@ export const UtilityPane = ({ cwd }: UtilityPaneProps) => {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-slate-500">Worktree Path</span>
-                    <span className="text-slate-400 font-mono">/tmp/overseer-wt-123</span>
+                    <span className="text-slate-500">Agent Status</span>
+                    <span className="text-slate-400 font-bold">READY</span>
                   </div>
                 </div>
               </div>
@@ -79,11 +104,28 @@ export const UtilityPane = ({ cwd }: UtilityPaneProps) => {
         )}
 
         {mode === 'GIT' && (
-          <div className="p-8 flex flex-col items-center justify-center h-full text-center space-y-3 opacity-60">
-            <GitBranch className="w-8 h-8 text-slate-700" />
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Git Dashboard</p>
-              <p className="text-[10px] text-slate-600">Module currently under development</p>
+          <div className="p-5 flex flex-col h-full">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-slate-500">
+                <GitBranch className="w-4 h-4 text-blue-500/50" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Git Status</span>
+              </div>
+              <button 
+                onClick={fetchGitStatus}
+                className={`p-1 rounded hover:bg-slate-800 text-slate-500 transition-all ${loading ? 'animate-spin text-blue-500' : ''}`}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-[11px] overflow-auto whitespace-pre no-scrollbar">
+              {gitStatus || 'No status data available'}
+            </div>
+
+            <div className="mt-4 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
+              <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest leading-relaxed">
+                Worktree isolated. You can commit safely without affecting your main checkout.
+              </p>
             </div>
           </div>
         )}

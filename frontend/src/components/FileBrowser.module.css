@@ -2,9 +2,12 @@
 .fileBrowser {
     border: 1px solid #ccc;
     padding: 10px;
-    height: 400px; /* Example height */
+    /* height: 400px; /* Removed fixed height */
     overflow-y: auto;
     background-color: #f9f9f9;
+    flex: 1; /* Allow to grow in a flex container */
+    display: flex; /* Make it a flex container itself */
+    flex-direction: column; /* Stack children vertically */
 }
 
 .pathBar {
@@ -12,6 +15,7 @@
     align-items: center;
     margin-bottom: 10px;
     gap: 10px;
+    flex-shrink: 0; /* Don't shrink path bar */
 }
 
 .pathBar button {
@@ -23,6 +27,8 @@
     list-style: none;
     padding: 0;
     margin: 0;
+    flex: 1; /* File list takes remaining space */
+    overflow-y: auto; /* Ensure internal scrolling */
 }
 
 .fileList li {

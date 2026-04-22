@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Folder, Search, Settings, Plus, X, GitBranch, Terminal, ChevronRight, FolderOpen, Home } from 'lucide-react'
+import { Folder, Search, Settings, Plus, GitBranch, Terminal, Check } from 'lucide-react'
 import { getBaseUrl } from '../App'
+import Modal from './Modal' // Import the new Modal component
+import FileBrowser from './FileBrowser' // Import the new FileBrowser component
 
 interface Repo {
   id: string
@@ -25,11 +27,6 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
   const [showAddModal, setShowAddModal] = useState(false)
   const [newRepo, setNewRepo] = useState({ name: '', path: '' })
   
-  // Browser state
-  const [browserEntries, setBrowserEntries] = useState<{name: string, path: string, is_dir: boolean}[]>([])
-  const [currentBrowserPath, setCurrentBrowserPath] = useState('')
-  const [showBrowser, setShowBrowser] = useState(false)
-
   const refresh = () => {
     fetch(`${getBaseUrl()}/api/config`)
       .then(res => res.json())
@@ -40,30 +37,11 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
       .catch(err => console.error("Failed to fetch config:", err))
   }
 
-  const loadBrowser = (path: string = '') => {
-    const url = `${getBaseUrl()}/api/ls?path=${encodeURIComponent(path)}`
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (data.entries) {
-          setBrowserEntries(data.entries)
-          setCurrentBrowserPath(data.current_path)
-        }
-      })
-  }
-
   useEffect(() => {
     refresh()
   }, [])
 
-  useEffect(() => {
-    if (showBrowser) {
-      loadBrowser(currentBrowserPath)
-    }
-  }, [showBrowser])
-
-  const handleAddRepo = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleAddRepo = async () => { // Removed 'e: React.FormEvent' and e.preventDefault()
     if (!newRepo.name || !newRepo.path) return
 
     const repo: Repo = {
@@ -80,16 +58,10 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
       })
       setNewRepo({ name: '', path: '' })
       setShowAddModal(false)
-      setShowBrowser(false)
       refresh()
     } catch (err) {
       console.error("Failed to add repo:", err)
     }
-  }
-
-  const selectPathFromBrowser = (path: string) => {
-    setNewRepo(prev => ({ ...prev, path }))
-    setShowBrowser(false)
   }
 
   return (
@@ -107,7 +79,7 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
         <section>
           <div className="flex items-center justify-between px-2 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.1em]">
             <span>Repositories</span>
-            <button 
+            <button
               onClick={() => setShowAddModal(true)}
               className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-blue-400 transition-all"
               title="Add Repository"
@@ -125,8 +97,8 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
                 </div>
                 <div className="pl-4 space-y-0.5 border-l border-slate-800 ml-4">
                   {repos.filter(r => r.group_id === group.id).map(repo => (
-                    <div 
-                      key={repo.id} 
+                    <div
+                      key={repo.id}
                       onClick={() => onSelectRepo(repo)}
                       className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer text-sm text-slate-400 transition-all group"
                     >
@@ -137,11 +109,11 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
                 </div>
               </div>
             ))}
-            
+
             {/* Ungrouped Repos */}
             {repos.filter(r => !r.group_id).map(repo => (
-              <div 
-                key={repo.id} 
+              <div
+                key={repo.id}
                 onClick={() => onSelectRepo(repo)}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer text-sm text-slate-400 transition-all group"
               >
@@ -150,10 +122,10 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
               </div>
             ))}
 
-            {repos.length === 0 && groups.length === 0 && (
+            {repos.length === 0 && (
               <div className="mt-4 p-4 text-center rounded-xl border border-dashed border-slate-800 bg-slate-900/30">
                 <p className="text-[10px] text-slate-500 font-bold uppercase mb-2">Workspace Ready</p>
-                <button 
+                <button
                   onClick={() => setShowAddModal(true)}
                   className="text-xs text-blue-500 hover:text-blue-400 font-semibold underline underline-offset-4"
                 >
@@ -177,108 +149,50 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
         </button>
       </div>
 
-      {/* Modern Add Repo Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/30">
-              <div className="flex items-center gap-2">
-                <Plus className="w-4 h-4 text-blue-500" />
-                <h3 className="font-bold text-slate-100">Add Repository</h3>
-              </div>
-              <button 
-                onClick={() => setShowAddModal(false)} 
-                className="p-1.5 rounded-full hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleAddRepo} className="p-6 space-y-5">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Display Name</label>
-                <input 
-                  autoFocus
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-600/50 focus:border-blue-500 transition-all placeholder:text-slate-700"
-                  placeholder="e.g. Overseer UI"
-                  value={newRepo.name}
-                  onChange={e => setNewRepo({...newRepo, name: e.target.value})}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Local Directory Path</label>
-                <div className="relative group/path">
-                  <input 
-                    readOnly
-                    onClick={() => setShowBrowser(!showBrowser)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pr-10 text-sm text-white focus:outline-none cursor-pointer hover:border-slate-600 transition-all placeholder:text-slate-700 font-mono"
-                    placeholder="Click to browse..."
-                    value={newRepo.path}
-                  />
-                  <div className="absolute right-3 top-3 p-1 rounded hover:bg-slate-800 text-slate-500 group-hover/path:text-blue-500 transition-colors">
-                    <FolderOpen className="w-4 h-4" />
-                  </div>
-                </div>
+      {/* New Add Repo Modal */}
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add New Repository"
+      >
+        {/* Main content div for the modal - now a flex container */}
+        <div className="flex flex-col flex-grow h-full overflow-hidden">
+          <div className="space-y-2 mb-4 flex-shrink-0"> {/* Display Name input - flex-shrink-0 to not shrink */}
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Display Name</label>
+            <input
+              autoFocus
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-600/50 focus:border-blue-500 transition-all placeholder:text-slate-700 shadow-inner"
+              placeholder="e.g. My Project"
+              value={newRepo.name}
+              onChange={e => setNewRepo({...newRepo, name: e.target.value})}
+            />
+          </div>
 
-                {/* Directory Browser Sub-Modal/Dropdown */}
-                {showBrowser && (
-                  <div className="mt-2 bg-slate-950 border border-slate-800 rounded-xl max-h-64 overflow-hidden flex flex-col shadow-2xl animate-in fade-in slide-in-from-top-2">
-                    <div className="p-2 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-                      <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 px-2 overflow-hidden">
-                        <Home className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">{currentBrowserPath || 'Root'}</span>
-                      </div>
-                      <button 
-                        type="button"
-                        onClick={() => selectPathFromBrowser(currentBrowserPath)}
-                        className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-500 text-[10px] font-bold text-white uppercase"
-                      >
-                        Select
-                      </button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto no-scrollbar p-1">
-                      {browserEntries.map((entry) => (
-                        <div 
-                          key={entry.path}
-                          onClick={() => entry.name === '..' ? loadBrowser(entry.path) : loadBrowser(entry.path)}
-                          className="flex items-center justify-between p-2 rounded hover:bg-slate-800 cursor-pointer transition-colors group/entry"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Folder className={`w-4 h-4 ${entry.name === '..' ? 'text-slate-600' : 'text-blue-500/60'}`} />
-                            <span className={`text-xs ${entry.name === '..' ? 'text-slate-500' : 'text-slate-300'}`}>
-                              {entry.name}
-                            </span>
-                          </div>
-                          <ChevronRight className="w-3 h-3 text-slate-700 opacity-0 group-hover/entry:opacity-100 transition-all" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <p className="text-[10px] text-slate-600 px-1">Ensure this directory is a valid Git repository.</p>
-              </div>
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1 mb-2 flex-shrink-0">Select the root directory of your Git repository:</p>
+          {/* FileBrowser container - now takes remaining space */}
+          <div className="flex-grow min-h-0 mb-4 border border-slate-700 rounded-lg overflow-hidden">
+            <FileBrowser onSelectPath={(path) => setNewRepo(prev => ({ ...prev, path }))} initialPath={newRepo.path || '/'} />
+          </div>
+          <p className="text-sm font-medium text-slate-400 mb-4 flex-shrink-0">Selected path: <strong>{newRepo.path || 'None'}</strong></p>
 
-              <div className="pt-4 flex gap-3">
-                <button 
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold text-slate-300 transition-all active:scale-95"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  disabled={!newRepo.name || !newRepo.path}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold text-white shadow-lg shadow-blue-900/20 transition-all active:scale-95"
-                >
-                  Register Repository
-                </button>
-              </div>
-            </form>
+          <div className="pt-4 flex gap-4 flex-shrink-0"> {/* Buttons - flex-shrink-0 to not shrink */}
+            <button
+              onClick={() => setShowAddModal(false)}
+              className="flex-1 px-6 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-sm font-bold text-slate-400 transition-all active:scale-95"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddRepo}
+              disabled={!newRepo.name || !newRepo.path}
+              className="flex-[2] px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold text-white shadow-xl shadow-blue-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              <Check className="w-4 h-4" />
+              Add Repository
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
     </aside>
-  )
+  );
 }

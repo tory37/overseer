@@ -5,9 +5,10 @@ import '@xterm/xterm/css/xterm.css';
 
 interface TerminalProps {
   cwd?: string;
+  command?: string;
 }
 
-export const Terminal = ({ cwd }: TerminalProps) => {
+export const Terminal = ({ cwd, command }: TerminalProps) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Xterm | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -39,6 +40,9 @@ export const Terminal = ({ cwd }: TerminalProps) => {
     
     if (cwd) {
       wsUrl.searchParams.append('cwd', cwd);
+    }
+    if (command) {
+      wsUrl.searchParams.append('command', command);
     }
     
     console.log(`Connecting to WebSocket: ${wsUrl.toString()}`);

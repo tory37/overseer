@@ -4,15 +4,16 @@ import { UtilityPane } from './UtilityPane'
 
 interface TabContainerProps {
   cwd?: string
+  command?: string
 }
 
-export const TabContainer = ({ cwd }: TabContainerProps) => {
+export const TabContainer = ({ cwd, command }: TabContainerProps) => {
   return (
     <div className="flex-1 w-full h-full overflow-hidden flex flex-col">
       <Group orientation="horizontal">
         <Panel defaultSize={60} minSize={30}>
           <div className="h-full w-full bg-black/20">
-            <Terminal cwd={cwd} />
+            <Terminal cwd={cwd} command={command} />
           </div>
         </Panel>
         

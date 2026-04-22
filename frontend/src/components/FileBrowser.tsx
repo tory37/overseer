@@ -1,5 +1,6 @@
 // frontend/src/components/FileBrowser.tsx
 import React, { useState, useEffect } from 'react';
+import { getBaseUrl } from '../App';
 import styles from './FileBrowser.module.css';
 
 interface FileSystemEntry {
@@ -25,16 +26,19 @@ const FileBrowser: React.FC<FileBrowserProps> = ({ initialPath = '/', onSelectPa
             setLoading(true);
             setError(null);
             try {
-                const response = await fetch('/api/fs/list', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path: currentPath }),
-                });
+                const response = await fetch(`${getBaseUrl()}/api/ls?path=${encodeURIComponent(currentPath)}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                setContents(data.contents);
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                setContents(data.entries.map((entry: any) => ({
+                    name: entry.name,
+                    path: entry.path,
+                    type: entry.is_dir ? 'directory' : 'file',
+                })));
             } catch (e: any) {
                 setError(`Failed to fetch directory contents: ${e.message}`);
                 setContents([]);
@@ -59,14 +63,13 @@ const FileBrowser: React.FC<FileBrowserProps> = ({ initialPath = '/', onSelectPa
     const handleItemClick = (entry: FileSystemEntry) => {
         if (entry.type === 'directory') {
             navigateTo(entry.path);
+            onSelectPath(entry.path); // Implicitly select directory on navigation
         } else if (allowFileSelection) {
             onSelectPath(entry.path);
         }
     };
 
-    const handleSelectCurrentDirectory = () => {
-        onSelectPath(currentPath);
-    };
+    // Remove handleSelectCurrentDirectory and the associated button, as selection is now implicit for directories.
 
     // Simple path manipulation for now, will replace with proper library or better implementation later
     const Path = (p: string) => {
@@ -83,7 +86,6 @@ const FileBrowser: React.FC<FileBrowserProps> = ({ initialPath = '/', onSelectPa
             <div className={styles.pathBar}>
                 <button onClick={goUp} disabled={currentPath === '/'}>Up</button>
                 <span>Current Path: {currentPath}</span>
-                <button onClick={handleSelectCurrentDirectory}>Select Current Directory</button>
             </div>
             {loading && <div className={styles.loading}>Loading...</div>}
             {error && <div className={styles.error}>{error}</div>}

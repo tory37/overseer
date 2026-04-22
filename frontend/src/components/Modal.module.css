@@ -13,7 +13,7 @@
 }
 
 .modalContent {
-    background: white;
+    background: #1e293b; /* Dark background */
     padding: 20px;
     border-radius: 8px;
     min-width: 500px;
@@ -22,6 +22,7 @@
     overflow: auto;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     position: relative;
+    color: #cbd5e1; /* Default text color for dark background (slate-300) */
 }
 
 .modalHeader {
@@ -29,13 +30,14 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #334155; /* Darker border */
     padding-bottom: 10px;
 }
 
 .modalHeader h2 {
     margin: 0;
     font-size: 1.5em;
+    color: white; /* White title for dark background */
 }
 
 .closeButton {
@@ -43,11 +45,11 @@
     border: none;
     font-size: 1.8em;
     cursor: pointer;
-    color: #333;
+    color: #94a3b8; /* Lighter grey for close button */
 }
 
 .closeButton:hover {
-    color: #000;
+    color: white;
 }
 
 .modalBody {
