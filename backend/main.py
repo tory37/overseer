@@ -8,6 +8,11 @@ from fastapi.staticfiles import StaticFiles
 from .pty_manager import PtyManager
 from .store import Store, Repo, Group
 from .git_utils import GitManager
+from backend.file_system_api import list_directory_contents
+from pydantic import BaseModel
+
+class FileSystemPath(BaseModel):
+    path: str
 
 app = FastAPI()
 store = Store()
@@ -32,6 +37,10 @@ async def get_config():
 async def add_repo(repo: Repo):
     store.add_repo(repo)
     return {"status": "ok"}
+
+@app.post("/api/fs/list")
+async def list_fs_contents(fs_path: FileSystemPath):
+    return {"contents": list_directory_contents(fs_path.path)}
 
 @app.get("/api/ls")
 async def list_dir(path: str = Query(".")):
@@ -89,13 +98,30 @@ async def create_worktree(repo_id: str, task_name: str):
     else:
         return {"error": "Failed to create worktree"}
 
+@app.get("/api/git/status")
+async def git_status(cwd: str):
+    """Get git status for the given directory."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain", "-b"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return {"status": "ok", "output": result.stdout}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.websocket("/ws/terminal")
 async def terminal_websocket(
     websocket: WebSocket, 
-    cwd: Optional[str] = Query(None)
+    cwd: Optional[str] = Query(None),
+    command: Optional[str] = Query("/bin/bash")
 ):
     await websocket.accept()
-    pty = PtyManager(cwd=cwd)
+    pty = PtyManager(cwd=cwd, command=command)
     pty.start()
 
     async def pty_to_ws():
