@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Persona, createPersona } from '../utils/api';
+import { Persona, createPersona, getPersonas } from '../utils/api';
 import { Ghost, CheckCircle, XCircle } from 'lucide-react'; // Importing icons for success/error
 
 export const PersonaLab: React.FC = () => {
@@ -26,6 +26,13 @@ export const PersonaLab: React.FC = () => {
             // Basic validation
             if (!persona.id || !persona.name || !persona.instructions || !persona.avatarId) {
                 throw new Error('All fields are required.');
+            }
+
+            // Client-side validation for ID uniqueness
+            const existingPersonas = await getPersonas();
+            const idExists = existingPersonas.some(p => p.id === persona.id);
+            if (idExists) {
+                throw new Error(`Persona with ID '${persona.id}' already exists. Please choose a unique ID.`);
             }
             
             await createPersona(persona);
