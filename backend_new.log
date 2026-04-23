@@ -1,0 +1,12 @@
+INFO:     Started server process [78868]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:42930 - "OPTIONS /api/worktrees HTTP/1.1" 200 OK
+DEBUG: repos type: <class 'list'>
+DEBUG: first repo type: <class 'backend.store.Repo'>
+INFO:     127.0.0.1:42934 - "POST /api/worktrees?repo_id=hdyx1r&task_name=test-curl-8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39176 - "OPTIONS /api/worktrees HTTP/1.1" 200 OK
+DEBUG: repos type: <class 'list'>
+DEBUG: first repo type: <class 'backend.store.Repo'>
+INFO:     127.0.0.1:39180 - "POST /api/worktrees?repo_id=hdyx1r&task_name=verification-test HTTP/1.1" 200 OK
