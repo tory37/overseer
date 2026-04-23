@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Terminal as Xterm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
@@ -7,12 +7,14 @@ interface TerminalProps {
   id?: string;
   cwd?: string;
   command?: string;
+  onVoiceMessage?: (message: string) => void;
 }
 
-export const Terminal = ({ id, cwd, command }: TerminalProps) => {
+export const Terminal = ({ id, cwd, command, onVoiceMessage }: TerminalProps) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Xterm | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const [voiceMessage, setVoiceMessage] = useState<string | null>(null); // State for voice message
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -54,7 +56,30 @@ export const Terminal = ({ id, cwd, command }: TerminalProps) => {
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
-      term.write(event.data);
+      let data = event.data;
+      const voiceRegex = /<voice>(.*?)<\/voice>/gs;
+      let match;
+      let processedData = '';
+      let lastIndex = 0;
+
+      while ((match = voiceRegex.exec(data)) !== null) {
+        // Append text before the voice tag
+        processedData += data.substring(lastIndex, match.index);
+        
+        // Extract voice message
+        const message = match[1].trim();
+        if (message) {
+          onVoiceMessage?.(message); // Call the prop function
+          setVoiceMessage(message); // Also update local state for potential internal use
+        }
+        
+        // Update lastIndex to after the current match
+        lastIndex = voiceRegex.lastIndex;
+      }
+      // Append any remaining text after the last voice tag
+      processedData += data.substring(lastIndex);
+
+      term.write(processedData);
     };
 
     ws.onerror = (error) => {
@@ -93,7 +118,7 @@ export const Terminal = ({ id, cwd, command }: TerminalProps) => {
       ws.close();
       term.dispose();
     };
-  }, [id, cwd, command]);
+  }, [id, cwd, command, onVoiceMessage]);
 
   return (
     <div className="w-full h-full bg-slate-900 overflow-hidden">

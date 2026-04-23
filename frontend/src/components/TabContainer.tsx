@@ -1,6 +1,8 @@
 import { Panel, Group, Separator } from 'react-resizable-panels'
 import { Terminal } from './Terminal'
 import { UtilityPane } from './UtilityPane'
+import { useState } from 'react'
+import { PixelAgent } from './PixelAgent'
 
 interface TabContainerProps {
   id: string
@@ -9,12 +11,21 @@ interface TabContainerProps {
 }
 
 export const TabContainer = ({ id, cwd, command }: TabContainerProps) => {
+  const [voiceMessage, setVoiceMessage] = useState<string | null>(null)
+
+  const handleVoiceMessage = (message: string) => {
+    setVoiceMessage(message)
+    // Optionally clear the message after some time
+    setTimeout(() => setVoiceMessage(null), 5000); // Clear after 5 seconds
+  }
+
   return (
     <div className="flex-1 w-full h-full overflow-hidden flex flex-col">
       <Group orientation="horizontal">
         <Panel defaultSize={60} minSize={30}>
-          <div className="h-full w-full bg-black/20">
-            <Terminal id={id} cwd={cwd} command={command} />
+          <div className="h-full w-full bg-black/20 relative"> {/* Added relative for PixelAgent positioning */}
+            <Terminal id={id} cwd={cwd} command={command} onVoiceMessage={handleVoiceMessage} />
+            <PixelAgent message={voiceMessage} avatarId="overseer" /> {/* Render PixelAgent */}
           </div>
         </Panel>
         
