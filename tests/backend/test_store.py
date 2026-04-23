@@ -43,3 +43,35 @@ def test_add_persona(temp_store):
     custom = next((p for p in new_store.config.personas if p.id == "custom"), None)
     assert custom is not None
     assert custom.name == "Custom"
+
+def test_persona_model_structure():
+    persona_data = {
+        "id": "test",
+        "name": "Test Persona",
+        "instructions": "These are test instructions.",
+        "avatarId": "test-avatar"
+    }
+    persona = Persona(**persona_data)
+    assert persona.id == "test"
+    assert persona.name == "Test Persona"
+    assert persona.instructions == "These are test instructions."
+    assert persona.avatarId == "test-avatar"
+
+def test_get_persona(temp_store):
+    store = temp_store
+    
+    # Add a new persona
+    new_persona = Persona(id="getter", name="Getter Persona", instructions="Get me.", avatarId="getter-1")
+    store.add_persona(new_persona)
+    
+    # Retrieve the persona
+    retrieved_persona = store.get_persona("getter")
+    assert retrieved_persona is not None
+    assert retrieved_persona.id == "getter"
+    assert retrieved_persona.name == "Getter Persona"
+    assert retrieved_persona.instructions == "Get me."
+    assert retrieved_persona.avatarId == "getter-1"
+    
+    # Try to retrieve a non-existent persona
+    non_existent_persona = store.get_persona("non-existent")
+    assert non_existent_persona is None
