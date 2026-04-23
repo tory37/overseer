@@ -64,20 +64,28 @@ export const Terminal = ({ cwd, command }: TerminalProps) => {
 
     term.onData((data) => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(data);
+        ws.send(JSON.stringify({ type: 'input', data }));
+      }
+    });
+
+    term.onResize(({ cols, rows }) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'resize', cols, rows }));
       }
     });
 
     xtermRef.current = term;
 
-    const handleResize = () => {
+    const resizeObserver = new ResizeObserver(() => {
       fitAddon.fit();
-    };
+    });
 
-    window.addEventListener('resize', handleResize);
+    if (terminalRef.current) {
+      resizeObserver.observe(terminalRef.current);
+    }
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       ws.close();
       term.dispose();
     };

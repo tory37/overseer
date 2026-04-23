@@ -1,5 +1,6 @@
 import asyncio
 import os
+import json
 import uvicorn
 from typing import Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
@@ -149,7 +150,15 @@ async def terminal_websocket(
         try:
             while True:
                 data = await websocket.receive_text()
-                pty.write(data)
+                try:
+                    msg = json.loads(data)
+                    if msg.get("type") == "input":
+                        pty.write(msg.get("data", ""))
+                    elif msg.get("type") == "resize":
+                        pty.resize(msg.get("rows"), msg.get("cols"))
+                except json.JSONDecodeError:
+                    # Fallback for raw strings to ensure backward compatibility
+                    pty.write(data)
         except WebSocketDisconnect:
             print("DEBUG: WebSocket disconnected by client")
             pty.stop()
