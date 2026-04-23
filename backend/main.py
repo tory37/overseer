@@ -3,7 +3,7 @@ import os
 import json
 import uvicorn
 from typing import Optional, List
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .pty_manager import PtyManager
@@ -50,6 +50,8 @@ async def create_session(request: NewSessionRequest):
     persona = None
     if request.personaId:
         persona = next((p for p in store.config.personas if p.id == request.personaId), None)
+        if not persona:
+            raise HTTPException(status_code=404, detail=f"Persona with ID '{request.personaId}' not found")
     
     session_id = await session_manager.create_session(request.name, request.cwd, persona)
     return {"id": session_id}
