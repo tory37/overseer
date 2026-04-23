@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react'
 import { X, Plus, Terminal, Search, Folder, Zap, Globe, Cpu, Play } from 'lucide-react'
 import FileBrowser from './FileBrowser'
-import { getBaseUrl, Persona, getPersonas, createSession } from '../utils/api'
+import { getBaseUrl, type Persona } from '../utils/api'
 
 interface NewSessionOverlayProps {
+  personas: Persona[]
   onClose: () => void
   onLaunch: (name: string, path: string, command: string, personaId: string | null) => void
 }
 
-export const NewSessionOverlay = ({ onClose, onLaunch }: NewSessionOverlayProps) => {
+export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOverlayProps) => {
   const [selectedPath, setSelectedPath] = useState('')
   const [selectedCommand, setSelectedCommand] = useState('gemini --approval-mode yolo')
   const [repos, setRepos] = useState<any[]>([])
   const [filter, setFilter] = useState('')
   const [showFileBrowser, setShowFileBrowser] = useState(false)
-  const [personas, setPersonas] = useState<Persona[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
 
   const presets = [
@@ -28,10 +28,6 @@ export const NewSessionOverlay = ({ onClose, onLaunch }: NewSessionOverlayProps)
       .then(res => res.json())
       .then(data => setRepos(data.repos || []))
       .catch(err => console.error("Failed to fetch config:", err))
-
-    getPersonas()
-      .then(setPersonas)
-      .catch(err => console.error("Failed to fetch personas:", err));
 
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -136,7 +132,21 @@ export const NewSessionOverlay = ({ onClose, onLaunch }: NewSessionOverlayProps)
                         : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
                     }`}
                   >
-                    <img src={`/assets/avatars/${persona.avatarId}.png`} alt={persona.name} className="w-12 h-12 rounded-full mb-2" />
+                    <div className="w-12 h-12 rounded-full mb-2 overflow-hidden flex items-center justify-center bg-blue-500/20 border border-blue-500/30">
+                      <img 
+                        src={`/assets/avatars/${persona.avatarId}.svg`} 
+                        alt={persona.name} 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          const fallback = (e.target as HTMLImageElement).parentElement?.querySelector('.avatar-fallback') as HTMLElement;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                      <div className="avatar-fallback hidden w-full h-full items-center justify-center text-blue-400 font-bold text-xl">
+                        {persona.name.charAt(0)}
+                      </div>
+                    </div>
                     <p className="font-bold text-sm">{persona.name}</p>
                   </div>
                 ))}

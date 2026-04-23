@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
-import { Persona, createPersona, getPersonas } from '../utils/api';
+import type { Persona } from '../utils/api';
+import { createPersona, getPersonas } from '../utils/api';
 import { Ghost, CheckCircle, XCircle } from 'lucide-react'; // Importing icons for success/error
 
-export const PersonaLab: React.FC = () => {
+interface PersonaLabProps {
+    onCreated?: () => void;
+}
+
+export const PersonaLab: React.FC<PersonaLabProps> = ({ onCreated }) => {
     const [persona, setPersona] = useState<Persona>({
         id: '',
         name: '',
@@ -39,6 +44,11 @@ export const PersonaLab: React.FC = () => {
             setMessage({ type: 'success', text: 'Persona created successfully!' });
             // Clear form after successful submission
             setPersona({ id: '', name: '', instructions: '', avatarId: '' });
+            
+            // Trigger callback if provided
+            if (onCreated) {
+                onCreated();
+            }
         } catch (err: any) {
             console.error('Failed to create persona:', err);
             setMessage({ type: 'error', text: err.message || 'Failed to create persona.' });

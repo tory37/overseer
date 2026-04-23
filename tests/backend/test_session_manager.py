@@ -78,3 +78,13 @@ async def test_session_subscription():
     assert found
     session.unsubscribe(queue)
     sm.unregister("sub-test")
+
+@pytest.mark.anyio
+async def test_session_manager_create_session_custom_id():
+    sm = SessionManager()
+    custom_id = "my-custom-id"
+    await sm.create_session(name="Test", cwd="/tmp", command="echo hello", session_id=custom_id)
+    session = sm.get_session(custom_id)
+    assert session is not None
+    assert session.session_id == custom_id
+    sm.unregister(custom_id)

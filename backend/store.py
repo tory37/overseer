@@ -28,6 +28,7 @@ class SessionTab(BaseModel):
     name: str
     cwd: str
     command: Optional[str] = None
+    personaId: Optional[str] = None
     active: bool = False
 
 class Config(BaseModel):
@@ -71,6 +72,8 @@ class Store:
         self.save()
 
     def add_persona(self, persona: Persona):
+        if any(p.id == persona.id for p in self.config.personas):
+            raise ValueError(f"Persona with ID '{persona.id}' already exists.")
         self.config.personas.append(persona)
         self.save()
 

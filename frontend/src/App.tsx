@@ -3,7 +3,7 @@ import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost, Rocket, Check, G
 import { Sidebar } from './components/Sidebar'
 import { TabContainer } from './components/TabContainer'
 import { NewSessionOverlay } from './components/NewSessionOverlay'
-import { getBaseUrl } from './utils/api'
+import { getBaseUrl, createSession, type Persona, getPersonas } from './utils/api'
 
 interface Repo {
   id: string
@@ -17,8 +17,10 @@ interface Tab {
   name: string
   cwd: string
   command?: string
+  personaId?: string | null
   active: boolean
 }
+
 
 function App() {
   const [tabs, setTabs] = useState<Tab[]>([])
@@ -28,8 +30,9 @@ function App() {
   const [isCreating, setIsCreating] = useState(false)
   const [isCreatingSession, setIsCreatingSession] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [personas, setPersonas] = useState<Persona[]>([])
 
-  // Fetch sessions on load
+  // Fetch sessions and personas on load
   useEffect(() => {
     fetch(`${getBaseUrl()}/api/sessions`)
       .then(res => res.json())
@@ -43,6 +46,10 @@ function App() {
         console.error("Failed to fetch sessions:", err)
         setIsLoaded(true)
       })
+
+    getPersonas()
+      .then(setPersonas)
+      .catch(err => console.error("Failed to fetch personas:", err))
   }, [])
 
   // Sync sessions to backend on change
@@ -64,12 +71,22 @@ function App() {
     syncSessions()
   }, [tabs])
 
-  const openTab = (name: string, path: string, command?: string) => {
-    const id = Math.random().toString(36).substring(7)
-    const newTabs = tabs.map(t => ({ ...t, active: false }))
-    setTabs([...newTabs, { id, name, cwd: path, command, active: true }])
-    setIsCreatingSession(false)
-    setIsLoaded(true)
+  const openTab = async (name: string, path: string, command?: string, personaId: string | null = null) => {
+    try {
+      const session = await createSession(name, path, command || '', personaId);
+      const id = session.id;
+      const newTabs = tabs.map(t => ({ ...t, active: false }))
+      setTabs([...newTabs, { id, name, cwd: path, command, personaId, active: true }])
+      setIsCreatingSession(false)
+      setIsLoaded(true)
+    } catch (err) {
+      console.error("Failed to create session:", err);
+      const id = Math.random().toString(36).substring(7)
+      const newTabs = tabs.map(t => ({ ...t, active: false }))
+      setTabs([...newTabs, { id, name, cwd: path, command, personaId, active: true }])
+      setIsCreatingSession(false)
+      setIsLoaded(true)
+    }
   }
 
   const handleStartTask = async (e: React.FormEvent) => {
@@ -85,7 +102,7 @@ function App() {
       const data = await res.json()
       
       if (data.status === 'ok') {
-        openTab(`${selectedRepo.name}: ${taskName}`, data.path, 'gemini --approval-mode yolo')
+        await openTab(`${selectedRepo.name}: ${taskName}`, data.path, 'gemini --approval-mode yolo')
         setShowTaskModal(false)
         setTaskName('')
       }
@@ -172,11 +189,20 @@ function App() {
         <div className="flex-1 flex overflow-hidden relative">
           {isCreatingSession ? (
             <NewSessionOverlay 
+              personas={personas}
               onClose={() => setIsCreatingSession(false)}
-              onLaunch={(name, path, command) => openTab(name, path, command)}
+              onLaunch={(name, path, command, personaId) => openTab(name, path, command, personaId)}
             />
           ) : activeTab ? (
-            <TabContainer key={activeTab.id} id={activeTab.id} cwd={activeTab.cwd} command={activeTab.command} />
+            <TabContainer 
+              key={activeTab.id} 
+              id={activeTab.id} 
+              cwd={activeTab.cwd} 
+              command={activeTab.command} 
+              personaId={activeTab.personaId} 
+              personas={personas}
+              onPersonaCreated={() => getPersonas().then(setPersonas)}
+            />
           ) : selectedRepo ? (
             <div className="flex-1 flex flex-col p-12 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center justify-between mb-12">

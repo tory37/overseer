@@ -1,0 +1,44 @@
+--- Ensuring no conflicting backend processes are running ---
+Killed any existing backend processes.
+--- Starting Backend ---
+Activating Python virtual environment...
+Starting FastAPI backend on http://localhost:8000 in foreground...
+Press Ctrl+C to stop the backend.
+INFO:     Will watch for changes in these directories: ['/home/toryhebert/src/agent-manager']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [130907] using StatReload
+INFO:     Started server process [130921]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:47754 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47768 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47776 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47784 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47792 - "WebSocket /ws/terminal?sessionId=cjcqt&cwd=%2Fhome%2Ftoryhebert%2Fsrc%2Fdekigo&command=gemini+--approval-mode+yolo" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:47804 - "GET /api/git/status?cwd=%2Fhome%2Ftoryhebert%2Fsrc%2Fdekigo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47816 - "PUT /api/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47818 - "WebSocket /ws/terminal?sessionId=cjcqt&cwd=%2Fhome%2Ftoryhebert%2Fsrc%2Fdekigo&command=gemini+--approval-mode+yolo" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:47834 - "GET /api/git/status?cwd=%2Fhome%2Ftoryhebert%2Fsrc%2Fdekigo HTTP/1.1" 200 OK
+INFO:     connection closed
+INFO:     connection closed
+WARNING:  StatReload detected changes in 'backend/main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [130921]
+INFO:     Started server process [132327]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:36772 - "WebSocket /ws/terminal?sessionId=test-session-53079.315522261&cwd=/tmp&command=ls" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:42324 - "WebSocket /ws/terminal?sessionId=test-session-53092.565192797&cwd=/tmp&command=ls" [accepted]
+INFO:     connection open
+INFO:     connection closed
+./start_backend_dev.sh: line 34: 130907 Killed                  uvicorn backend.main:app --reload --port "$BACKEND_PORT"
+Backend process stopped.
+INFO:     127.0.0.1:34314 - "WebSocket /ws/terminal?sessionId=test-session-53155.197151&cwd=/tmp&command=ls" [accepted]
+INFO:     connection open
+INFO:     connection closed
