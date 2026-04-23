@@ -4,15 +4,20 @@ import shutil
 from ptyprocess import PtyProcess
 
 class PtyManager:
-    def __init__(self, command: str = "/bin/bash", cwd: str = None):
-        if isinstance(command, str):
-            args = shlex.split(command)
+    def __init__(self, command: str = None, cwd: str = None):
+        # Detect default shell
+        shell_executable = shutil.which(os.environ.get("SHELL", "bash")) or "/bin/bash"
+        
+        # If no command or just requesting a shell, start an interactive shell
+        if not command or command in ["/bin/bash", "/bin/zsh", "bash", "zsh"]:
+            args = [shell_executable, "-i"]
         else:
-            args = command
-            
-        executable = shutil.which(args[0])
-        if executable:
-            args[0] = executable
+            # Wrap the command in the shell with -ic to source dotfiles
+            if isinstance(command, list):
+                command_str = shlex.join(command)
+            else:
+                command_str = command
+            args = [shell_executable, "-ic", command_str]
             
         self.command = args
         self.cwd = cwd or os.getcwd()
