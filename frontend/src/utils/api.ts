@@ -5,3 +5,47 @@ export const getBaseUrl = () => {
   // or use relative URLs in production (same host).
   return '';
 };
+
+export interface Persona {
+  id: string;
+  name: string;
+  instructions: string;
+  avatarId: string; // Assuming an avatar ID is a string for now
+}
+
+export interface Session {
+  id: string;
+  state: 'running' | 'stopped';
+  // Add other session properties as needed
+}
+
+export const getPersonas = async (): Promise<Persona[]> => {
+  const response = await fetch(`${getBaseUrl()}/api/personas`);
+  if (!response.ok) {
+    throw new Error(`Error fetching personas: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+export const createSession = async (personaId: string | null = null): Promise<Session> => {
+  const response = await fetch(`${getBaseUrl()}/api/sessions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ personaId }),
+  });
+  if (!response.ok) {
+    throw new Error(`Error creating session: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+// Placeholder for other API calls that might exist
+export const getSessions = async (): Promise<Session[]> => {
+  const response = await fetch(`${getBaseUrl()}/api/sessions`);
+  if (!response.ok) {
+    throw new Error(`Error fetching sessions: ${response.statusText}`);
+  }
+  return response.json();
+};

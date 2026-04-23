@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { X, Plus, Terminal, Search, Folder, Zap, Globe, Cpu, Play } from 'lucide-react'
 import FileBrowser from './FileBrowser'
-import { getBaseUrl } from '../utils/api'
+import { getBaseUrl, Persona, getPersonas, createSession } from '../utils/api'
 
 interface NewSessionOverlayProps {
   onClose: () => void
-  onLaunch: (name: string, path: string, command: string) => void
+  onLaunch: (name: string, path: string, command: string, personaId: string | null) => void
 }
 
 export const NewSessionOverlay = ({ onClose, onLaunch }: NewSessionOverlayProps) => {
@@ -14,6 +14,8 @@ export const NewSessionOverlay = ({ onClose, onLaunch }: NewSessionOverlayProps)
   const [repos, setRepos] = useState<any[]>([])
   const [filter, setFilter] = useState('')
   const [showFileBrowser, setShowFileBrowser] = useState(false)
+  const [personas, setPersonas] = useState<Persona[]>([]);
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
 
   const presets = [
     { id: 'gemini', name: 'Gemini CLI', cmd: 'gemini --approval-mode yolo', icon: Zap, color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/30' },
@@ -27,6 +29,10 @@ export const NewSessionOverlay = ({ onClose, onLaunch }: NewSessionOverlayProps)
       .then(data => setRepos(data.repos || []))
       .catch(err => console.error("Failed to fetch config:", err))
 
+    getPersonas()
+      .then(setPersonas)
+      .catch(err => console.error("Failed to fetch personas:", err));
+
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
@@ -37,7 +43,7 @@ export const NewSessionOverlay = ({ onClose, onLaunch }: NewSessionOverlayProps)
   const handleLaunch = () => {
     const repo = repos.find(r => r.path === selectedPath)
     const name = repo ? repo.name : (selectedPath.split('/').pop() || 'New Session')
-    onLaunch(name, selectedPath, selectedCommand)
+    onLaunch(name, selectedPath, selectedCommand, selectedPersonaId)
   }
   
   return (
@@ -116,6 +122,27 @@ export const NewSessionOverlay = ({ onClose, onLaunch }: NewSessionOverlayProps)
         <div className="flex flex-col p-8 space-y-6 overflow-y-auto custom-scrollbar">
           <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">2. Configure Agent</h3>
           <div className="space-y-6">
+            {/* Persona Selection */}
+            <div className="space-y-3 pt-4 border-t border-slate-800">
+              <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Select Persona</h4>
+              <div className="grid grid-cols-3 gap-3">
+                {personas.map(persona => (
+                  <div
+                    key={persona.id}
+                    onClick={() => setSelectedPersonaId(persona.id)}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center text-center ${
+                      selectedPersonaId === persona.id
+                        ? 'bg-blue-600/10 border-blue-500 text-blue-400'
+                        : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                    }`}
+                  >
+                    <img src={`/assets/avatars/${persona.avatarId}.png`} alt={persona.name} className="w-12 h-12 rounded-full mb-2" />
+                    <p className="font-bold text-sm">{persona.name}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-3">
               {presets.map(p => (
                 <div 
