@@ -14,7 +14,7 @@ export const Terminal = ({ id, cwd, command, onVoiceMessage }: TerminalProps) =>
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Xterm | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const [voiceMessage, setVoiceMessage] = useState<string | null>(null); // State for voice message
+
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -70,7 +70,7 @@ export const Terminal = ({ id, cwd, command, onVoiceMessage }: TerminalProps) =>
         const message = match[1].trim();
         if (message) {
           onVoiceMessage?.(message); // Call the prop function
-          setVoiceMessage(message); // Also update local state for potential internal use
+
         }
         
         // Update lastIndex to after the current match
