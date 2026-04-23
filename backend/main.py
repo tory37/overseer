@@ -2,12 +2,12 @@ import asyncio
 import os
 import json
 import uvicorn
-from typing import Optional
+from typing import Optional, List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .pty_manager import PtyManager
-from .store import Store, Repo, Group
+from .store import Store, Repo, Group, SessionTab
 from .git_utils import GitManager
 from backend.file_system_api import list_directory_contents
 from pydantic import BaseModel
@@ -33,6 +33,15 @@ async def health():
 @app.get("/api/config")
 async def get_config():
     return store.get_all()
+
+@app.get("/api/sessions")
+async def get_sessions():
+    return store.config.sessions
+
+@app.put("/api/sessions")
+async def update_sessions(sessions: List[SessionTab]):
+    store.update_sessions(sessions)
+    return {"status": "ok"}
 
 @app.post("/api/repos")
 async def add_repo(repo: Repo):

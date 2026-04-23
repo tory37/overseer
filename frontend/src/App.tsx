@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost, Rocket, Check, GitBranch, Info, Plus, Trash2, Folder, Home } from 'lucide-react' // Added Folder and Home icons
 import { Sidebar } from './components/Sidebar'
 import { TabContainer } from './components/TabContainer'
@@ -27,6 +27,35 @@ function App() {
   const [taskName, setTaskName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const [isCreatingSession, setIsCreatingSession] = useState(false)
+
+  // Fetch sessions on load
+  useEffect(() => {
+    fetch(`${getBaseUrl()}/api/sessions`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTabs(data)
+        }
+      })
+      .catch(err => console.error("Failed to fetch sessions:", err))
+  }, [])
+
+  // Sync sessions to backend on change
+  useEffect(() => {
+    const syncSessions = async () => {
+      try {
+        await fetch(`${getBaseUrl()}/api/sessions`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tabs)
+        })
+      } catch (err) {
+        console.error("Failed to sync sessions:", err)
+      }
+    }
+
+    syncSessions()
+  }, [tabs])
 
   const openTab = (name: string, path: string, command?: string) => {
     const id = Math.random().toString(36).substring(7)

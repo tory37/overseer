@@ -17,9 +17,17 @@ class Group(BaseModel):
     name: str
     parent_id: Optional[str] = None
 
+class SessionTab(BaseModel):
+    id: str
+    name: str
+    cwd: str
+    command: Optional[str] = None
+    active: bool = False
+
 class Config(BaseModel):
     repos: List[Repo] = []
     groups: List[Group] = []
+    sessions: List[SessionTab] = []
 
 class Store:
     def __init__(self):
@@ -49,6 +57,10 @@ class Store:
 
     def add_group(self, group: Group):
         self.config.groups.append(group)
+        self.save()
+
+    def update_sessions(self, sessions: List[SessionTab]):
+        self.config.sessions = sessions
         self.save()
 
     def get_all(self) -> Dict[str, Any]:
