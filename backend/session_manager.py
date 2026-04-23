@@ -1,12 +1,23 @@
 import time
 import asyncio
+import os
+import uuid
 from typing import Dict, Optional, Set
+from pydantic import BaseModel
 from backend.pty_manager import PtyManager
+from backend.store import Persona
+
+class SessionMetadata(BaseModel):
+    id: str
+    name: str
+    cwd: str
+    personaId: Optional[str] = None
 
 class Session:
-    def __init__(self, session_id: str, pty: PtyManager):
+    def __init__(self, session_id: str, pty: PtyManager, metadata: Optional[SessionMetadata] = None):
         self.session_id = session_id
         self.pty = pty
+        self.metadata = metadata
         self.created_at = time.time()
         self.last_accessed = time.time()
         self.queues: Set[asyncio.Queue] = set()
@@ -65,10 +76,35 @@ class SessionManager:
             cls._instance = super(SessionManager, cls).__new__(cls)
         return cls._instance
 
-    def register(self, session_id: str, pty: PtyManager):
-        session = Session(session_id, pty)
+    def register(self, session_id: str, pty: PtyManager, metadata: Optional[SessionMetadata] = None):
+        session = Session(session_id, pty, metadata)
         session.start_reading()
         self._sessions[session_id] = session
+
+    async def create_session(self, name: str, cwd: str, persona: Optional[Persona] = None):
+        session_id = str(uuid.uuid4())
+        env = os.environ.copy()
+        if persona:
+            instructions = (
+                f"You are {persona.name}. {persona.instructions} "
+                "You MUST wrap all non-technical conversational chatter in <voice> tags. "
+                "Do not wrap code, commands, or technical output in these tags."
+            )
+            env["GEMINI_SYSTEM_PROMPT_OVERRIDE"] = instructions
+            
+        # Use default shell/command for new sessions
+        pty = PtyManager(cwd=cwd, env=env)
+        pty.start()
+        
+        metadata = SessionMetadata(
+            id=session_id,
+            name=name,
+            cwd=cwd,
+            personaId=persona.id if persona else None
+        )
+        
+        self.register(session_id, pty, metadata)
+        return session_id
 
     def get_session(self, session_id: str) -> Optional[Session]:
         return self._sessions.get(session_id)

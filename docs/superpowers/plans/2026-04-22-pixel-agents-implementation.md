@@ -1,6 +1,6 @@
 # Pixel Agents Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Implement personality-driven "Pixel Agents" that provide conversational feedback via speech bubbles and custom avatars, while maintaining a clean terminal.
 
@@ -16,7 +16,7 @@
 - Modify: `backend/store.py`
 - Test: `tests/backend/test_store.py` (to be created)
 
-- [ ] **Step 1: Define Persona model and update Store**
+- [x] **Step 1: Define Persona model and update Store**
 
 ```python
 from pydantic import BaseModel
@@ -38,7 +38,7 @@ class Store(BaseModel):
     ]
 ```
 
-- [ ] **Step 2: Add test for Persona persistence**
+- [x] **Step 2: Add test for Persona persistence**
 
 Create `tests/backend/test_store.py`:
 ```python
@@ -56,12 +56,12 @@ def test_add_persona():
     assert len(store.personas) == 4
 ```
 
-- [ ] **Step 3: Run tests**
+- [x] **Step 3: Run tests**
 
 Run: `pytest tests/backend/test_store.py -v`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/store.py tests/backend/test_store.py
@@ -76,7 +76,7 @@ git commit -m "feat: add Persona model and default personas to store"
 - Modify: `backend/main.py`
 - Test: `tests/backend/test_api_personas.py` (to be created)
 
-- [ ] **Step 1: Add GET and POST /api/personas**
+- [x] **Step 1: Add GET and POST /api/personas**
 
 ```python
 @app.get("/api/personas")
@@ -90,7 +90,7 @@ async def create_persona(persona: Persona):
     return persona
 ```
 
-- [ ] **Step 2: Add test for Persona API**
+- [x] **Step 2: Add test for Persona API**
 
 Create `tests/backend/test_api_personas.py`:
 ```python
@@ -105,7 +105,7 @@ def test_get_personas():
     assert len(response.json()) >= 3
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add backend/main.py tests/backend/test_api_personas.py
@@ -120,7 +120,7 @@ git commit -m "feat: add persona API endpoints"
 - Modify: `backend/session_manager.py`
 - Modify: `backend/main.py`
 
-- [ ] **Step 1: Update Session metadata and launch logic**
+- [x] **Step 1: Update Session metadata and launch logic**
 
 In `backend/session_manager.py`, update `SessionMetadata` and `SessionManager.create_session`:
 ```python
@@ -145,7 +145,7 @@ async def create_session(self, name: str, cwd: str, persona: Optional[Persona] =
     # ... launch PTY with env
 ```
 
-- [ ] **Step 2: Update POST /api/sessions to accept personaId**
+- [x] **Step 2: Update POST /api/sessions to accept personaId**
 
 ```python
 @app.post("/api/sessions")
@@ -155,7 +155,7 @@ async def create_session(data: dict):
     # ...
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add backend/session_manager.py backend/main.py
@@ -170,7 +170,7 @@ git commit -m "feat: inject persona instructions into session environment"
 - Modify: `frontend/src/components/NewSessionOverlay.tsx`
 - Modify: `frontend/src/utils/api.ts`
 
-- [ ] **Step 1: Fetch personas in NewSessionOverlay**
+- [x] **Step 1: Fetch personas in NewSessionOverlay**
 
 ```typescript
 const [personas, setPersonas] = useState<Persona[]>([]);
@@ -181,11 +181,11 @@ useEffect(() => {
 }, []);
 ```
 
-- [ ] **Step 2: Add Persona UI selector**
+- [x] **Step 2: Add Persona UI selector**
 
 Add a grid of avatars to the "New Session" overlay.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/components/NewSessionOverlay.tsx frontend/src/utils/api.ts
@@ -199,7 +199,7 @@ git commit -m "feat: allow selecting a persona when creating a new session"
 **Files:**
 - Modify: `frontend/src/components/Terminal.tsx`
 
-- [ ] **Step 1: Implement <voice> tag parser**
+- [x] **Step 1: Implement <voice> tag parser**
 
 In `Terminal.tsx`, wrap the incoming data handler:
 ```typescript
@@ -212,11 +212,11 @@ const onData = (data: string) => {
 };
 ```
 
-- [ ] **Step 2: Create PixelAgent component**
+- [x] **Step 2: Create PixelAgent component**
 
 Create `frontend/src/components/PixelAgent.tsx` with a speech bubble and avatar.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/components/Terminal.tsx frontend/src/components/PixelAgent.tsx
@@ -230,9 +230,9 @@ git commit -m "feat: implement voice tag parsing and PixelAgent UI"
 **Files:**
 - Create: `frontend/src/components/PersonaLab.tsx`
 
-- [ ] **Step 1: Build form for custom personas**
-- [ ] **Step 2: Integrate with Sidebar or Settings**
-- [ ] **Step 3: Commit**
+- [x] **Step 1: Build form for custom personas**
+- [x] **Step 2: Integrate with Sidebar or Settings**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/components/PersonaLab.tsx

@@ -5,7 +5,7 @@ from collections import deque
 from ptyprocess import PtyProcess
 
 class PtyManager:
-    def __init__(self, command: str = None, cwd: str = None, use_shell: bool = True):
+    def __init__(self, command: str = None, cwd: str = None, env: dict = None, use_shell: bool = True):
         # Detect default shell
         shell_executable = shutil.which(os.environ.get("SHELL", "bash")) or "/bin/bash"
         
@@ -27,11 +27,12 @@ class PtyManager:
             
         self.command = args
         self.cwd = cwd or os.getcwd()
+        self.env = env
         self.process = None
         self.buffer = deque(maxlen=50)
 
     def start(self):
-        self.process = PtyProcess.spawn(self.command, cwd=self.cwd)
+        self.process = PtyProcess.spawn(self.command, cwd=self.cwd, env=self.env)
 
     def read(self, max_bytes: int = 1024) -> bytes:
         if not self.process:

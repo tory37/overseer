@@ -16,6 +16,11 @@ from pydantic import BaseModel
 class FileSystemPath(BaseModel):
     path: str
 
+class NewSessionRequest(BaseModel):
+    name: str
+    cwd: str
+    personaId: Optional[str] = None
+
 app = FastAPI()
 store = Store()
 session_manager = SessionManager()
@@ -39,6 +44,15 @@ async def get_config():
 @app.get("/api/sessions")
 async def get_sessions():
     return store.config.sessions
+
+@app.post("/api/sessions")
+async def create_session(request: NewSessionRequest):
+    persona = None
+    if request.personaId:
+        persona = next((p for p in store.config.personas if p.id == request.personaId), None)
+    
+    session_id = await session_manager.create_session(request.name, request.cwd, persona)
+    return {"id": session_id}
 
 @app.get("/api/personas")
 async def get_personas():
