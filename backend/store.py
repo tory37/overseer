@@ -70,6 +70,10 @@ class Store:
         self.config.groups.append(group)
         self.save()
 
+    def add_persona(self, persona: Persona):
+        self.config.personas.append(persona)
+        self.save()
+
     def update_sessions(self, sessions: List[SessionTab]):
         self.config.sessions = sessions
         self.save()

@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .pty_manager import PtyManager
 from .session_manager import SessionManager
-from .store import Store, Repo, Group, SessionTab
+from .store import Store, Repo, Group, SessionTab, Persona
 from .git_utils import GitManager
 from backend.file_system_api import list_directory_contents
 from pydantic import BaseModel
@@ -39,6 +39,15 @@ async def get_config():
 @app.get("/api/sessions")
 async def get_sessions():
     return store.config.sessions
+
+@app.get("/api/personas")
+async def get_personas():
+    return store.config.personas
+
+@app.post("/api/personas")
+async def create_persona(persona: Persona):
+    store.add_persona(persona)
+    return persona
 
 @app.put("/api/sessions")
 async def update_sessions(sessions: List[SessionTab]):
