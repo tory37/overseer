@@ -89,6 +89,7 @@ export const PersonaLab: React.FC = () => {
                 </div>
                 <div>
                     <label htmlFor="avatarId" className="block text-xs font-semibold text-slate-400 mb-1">Avatar ID</label>
+                    <p className="text-xs text-slate-500 mb-2">Enter a unique ID, like 'robot-1'. This ID should correspond to an image named `robot-1.png` in the `/assets/avatars/` directory.</p>
                     <input
                         type="text"
                         id="avatarId"
