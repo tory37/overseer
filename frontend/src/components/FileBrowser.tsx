@@ -1,6 +1,6 @@
 // frontend/src/components/FileBrowser.tsx
 import React, { useState, useEffect } from 'react';
-import { getBaseUrl } from '../App';
+import { getBaseUrl } from '../utils/api';
 import styles from './FileBrowser.module.css';
 
 interface FileSystemEntry {

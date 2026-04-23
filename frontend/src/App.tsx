@@ -3,6 +3,7 @@ import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost, Rocket, Check, G
 import { Sidebar } from './components/Sidebar'
 import { TabContainer } from './components/TabContainer'
 import { NewSessionOverlay } from './components/NewSessionOverlay'
+import { getBaseUrl } from './utils/api'
 
 interface Repo {
   id: string
@@ -18,13 +19,6 @@ interface Tab {
   command?: string
   active: boolean
 }
-
-// Utility to get the base API URL
-export const getBaseUrl = () => {
-  // Use relative URLs and let Vite proxy handle it during development,
-  // or use relative URLs in production (same host).
-  return '';
-};
 
 function App() {
   const [tabs, setTabs] = useState<Tab[]>([])
@@ -85,10 +79,13 @@ function App() {
 
   return (
     <div className="flex h-screen w-full bg-slate-950 text-slate-200 font-sans overflow-hidden selection:bg-blue-500/30">
-      <Sidebar onSelectRepo={(repo) => {
-        setSelectedRepo(repo)
-        setTabs(tabs.map(t => ({ ...t, active: false })))
-      }} />
+      <Sidebar 
+        onSelectRepo={(repo) => {
+          setSelectedRepo(repo)
+          setTabs(tabs.map(t => ({ ...t, active: false })))
+        }} 
+        onNewSession={() => setIsCreatingSession(true)}
+      />
 
       {/* Main Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_50%_0%,rgba(30,41,59,0.2),transparent)]">

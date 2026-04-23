@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Folder, Search, Settings, Plus, GitBranch, Terminal, Check } from 'lucide-react'
-import { getBaseUrl } from '../App'
+import { getBaseUrl } from '../utils/api'
 import Modal from './Modal' // Import the new Modal component
 import FileBrowser from './FileBrowser' // Import the new FileBrowser component
 
@@ -19,9 +19,10 @@ interface Group {
 
 interface SidebarProps {
   onSelectRepo: (repo: Repo) => void
+  onNewSession: () => void
 }
 
-export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
+export const Sidebar = ({ onSelectRepo, onNewSession }: SidebarProps) => {
   const [repos, setRepos] = useState<Repo[]>([])
   const [groups, setGroups] = useState<Group[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
@@ -72,6 +73,16 @@ export const Sidebar = ({ onSelectRepo }: SidebarProps) => {
           <Terminal className="w-5 h-5 text-white" />
         </div>
         <h1 className="font-bold text-lg tracking-tight text-slate-100">Overseer</h1>
+      </div>
+
+      <div className="px-3 py-2">
+        <button 
+          onClick={onNewSession}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-lg shadow-blue-900/30 transition-all active:scale-[0.98] group"
+        >
+          <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+          <span>New Agent Session</span>
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-4 no-scrollbar">

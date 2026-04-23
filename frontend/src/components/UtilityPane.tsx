@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Shell, GitBranch, Info, Activity, RefreshCw } from 'lucide-react'
-import { getBaseUrl } from '../App'
+import { getBaseUrl } from '../utils/api'
 
 interface UtilityPaneProps {
   cwd?: string
