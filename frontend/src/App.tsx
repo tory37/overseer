@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost, Rocket, Check, GitBranch, Info, Plus, Trash2, Folder, Home } from 'lucide-react' // Added Folder and Home icons
 import { Sidebar } from './components/Sidebar'
 import { TabContainer } from './components/TabContainer'
+import { NewSessionOverlay } from './components/NewSessionOverlay'
 
 interface Repo {
   id: string
@@ -31,11 +32,13 @@ function App() {
   const [showTaskModal, setShowTaskModal] = useState(false)
   const [taskName, setTaskName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [isCreatingSession, setIsCreatingSession] = useState(false)
 
   const openTab = (name: string, path: string, command?: string) => {
     const id = Math.random().toString(36).substring(7)
     const newTabs = tabs.map(t => ({ ...t, active: false }))
     setTabs([...newTabs, { id, name, cwd: path, command, active: true }])
+    setIsCreatingSession(false)
   }
 
   const handleStartTask = async (e: React.FormEvent) => {
@@ -86,6 +89,8 @@ function App() {
         setSelectedRepo(repo)
         setTabs(tabs.map(t => ({ ...t, active: false })))
       }} />
+
+      {isCreatingSession && <NewSessionOverlay />}
 
       {/* Main Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_50%_0%,rgba(30,41,59,0.2),transparent)]">
