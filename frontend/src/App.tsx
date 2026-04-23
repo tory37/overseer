@@ -166,7 +166,7 @@ function App() {
               onLaunch={(name, path, command) => openTab(name, path, command)}
             />
           ) : activeTab ? (
-            <TabContainer key={activeTab.id} cwd={activeTab.cwd} command={activeTab.command} />
+            <TabContainer key={activeTab.id} id={activeTab.id} cwd={activeTab.cwd} command={activeTab.command} />
           ) : selectedRepo ? (
             <div className="flex-1 flex flex-col p-12 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center justify-between mb-12">

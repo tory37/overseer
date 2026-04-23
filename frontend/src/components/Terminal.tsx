@@ -4,11 +4,12 @@ import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 
 interface TerminalProps {
+  id?: string;
   cwd?: string;
   command?: string;
 }
 
-export const Terminal = ({ cwd, command }: TerminalProps) => {
+export const Terminal = ({ id, cwd, command }: TerminalProps) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Xterm | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -38,6 +39,9 @@ export const Terminal = ({ cwd, command }: TerminalProps) => {
     const host = window.location.host;
     const wsUrl = new URL(`${protocol}//${host}/ws/terminal`);
     
+    if (id) {
+      wsUrl.searchParams.append('sessionId', id);
+    }
     if (cwd) {
       wsUrl.searchParams.append('cwd', cwd);
     }
@@ -89,7 +93,7 @@ export const Terminal = ({ cwd, command }: TerminalProps) => {
       ws.close();
       term.dispose();
     };
-  }, [cwd]);
+  }, [id, cwd, command]);
 
   return (
     <div className="w-full h-full bg-slate-900 overflow-hidden">
