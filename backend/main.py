@@ -7,6 +7,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .pty_manager import PtyManager
+from .session_manager import SessionManager
 from .store import Store, Repo, Group, SessionTab
 from .git_utils import GitManager
 from backend.file_system_api import list_directory_contents
@@ -17,6 +18,7 @@ class FileSystemPath(BaseModel):
 
 app = FastAPI()
 store = Store()
+session_manager = SessionManager()
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,6 +42,13 @@ async def get_sessions():
 
 @app.put("/api/sessions")
 async def update_sessions(sessions: List[SessionTab]):
+    old_ids = {s.id for s in store.config.sessions}
+    new_ids = {s.id for s in sessions}
+    
+    deleted_ids = old_ids - new_ids
+    for sid in deleted_ids:
+        session_manager.unregister(sid)
+        
     store.update_sessions(sessions)
     return {"status": "ok"}
 
@@ -126,19 +135,28 @@ async def git_status(cwd: str):
 @app.websocket("/ws/terminal")
 async def terminal_websocket(
     websocket: WebSocket, 
+    sessionId: str = Query(...),
     cwd: Optional[str] = Query(None),
     command: Optional[str] = Query("/bin/bash")
 ):
     await websocket.accept()
-    print(f"DEBUG: Starting PTY with command='{command}' cwd='{cwd}'")
-    pty = PtyManager(cwd=cwd, command=command)
-    try:
-        pty.start()
-    except Exception as e:
-        print(f"DEBUG: Failed to start PTY: {e}")
-        await websocket.send_text(f"\r\n[Overseer] Failed to start process: {e}\r\n")
-        await websocket.close()
-        return
+    
+    pty = session_manager.get(sessionId)
+    if not pty:
+        print(f"DEBUG: Starting new PTY for session {sessionId} with command='{command}' cwd='{cwd}'")
+        pty = PtyManager(cwd=cwd, command=command)
+        try:
+            pty.start()
+            session_manager.register(sessionId, pty)
+        except Exception as e:
+            print(f"DEBUG: Failed to start PTY: {e}")
+            await websocket.send_text(f"\r\n[Overseer] Failed to start process: {e}\r\n")
+            await websocket.close()
+            return
+    else:
+        print(f"DEBUG: Attaching to existing PTY for session {sessionId}")
+        # Send existing buffer immediately
+        await websocket.send_text(pty.get_buffer().decode(errors='replace'))
 
     async def pty_to_ws():
         try:
@@ -170,10 +188,8 @@ async def terminal_websocket(
                     pty.write(data)
         except WebSocketDisconnect:
             print("DEBUG: WebSocket disconnected by client")
-            pty.stop()
         except Exception as e:
             print(f"WS to PTY error: {e}")
-            pty.stop()
 
     await asyncio.gather(pty_to_ws(), ws_to_pty())
 
