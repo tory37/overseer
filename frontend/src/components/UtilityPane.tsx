@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Shell, GitBranch, Info, Activity, RefreshCw } from 'lucide-react'
+import { Shell, GitBranch, Info, Activity, RefreshCw, Ghost } from 'lucide-react'
 import { getBaseUrl } from '../utils/api'
+import { PersonaLab } from './PersonaLab'
 
 interface UtilityPaneProps {
   cwd?: string
 }
 
 export const UtilityPane = ({ cwd }: UtilityPaneProps) => {
-  const [mode, setMode] = useState<'SHELL' | 'GIT' | 'INSPECTOR'>('GIT')
+  const [mode, setMode] = useState<'SHELL' | 'GIT' | 'INSPECTOR' | 'PERSONA_LAB'>('GIT')
   const [gitStatus, setGitStatus] = useState<string>('')
   const [loading, setLoading] = useState(false)
 
@@ -41,6 +42,7 @@ export const UtilityPane = ({ cwd }: UtilityPaneProps) => {
           { id: 'GIT', icon: GitBranch, label: 'Git' },
           { id: 'INSPECTOR', icon: Info, label: 'Inspector' },
           { id: 'SHELL', icon: Shell, label: 'Shell' },
+          { id: 'PERSONA_LAB', icon: Ghost, label: 'Persona Lab' }, // Added Persona Lab
         ].map((item) => (
           <button
             key={item.id}
@@ -139,6 +141,8 @@ export const UtilityPane = ({ cwd }: UtilityPaneProps) => {
             </div>
           </div>
         )}
+
+        {mode === 'PERSONA_LAB' && <PersonaLab />}
       </div>
     </div>
   )

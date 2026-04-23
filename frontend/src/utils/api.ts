@@ -42,6 +42,21 @@ export const createSession = async (personaId: string | null = null): Promise<Se
 };
 
 // Placeholder for other API calls that might exist
+export const createPersona = async (persona: Persona): Promise<Persona> => {
+  const response = await fetch(`${getBaseUrl()}/api/personas`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(persona),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || `Error creating persona: ${response.statusText}`);
+  }
+  return response.json();
+};
+
 export const getSessions = async (): Promise<Session[]> => {
   const response = await fetch(`${getBaseUrl()}/api/sessions`);
   if (!response.ok) {
