@@ -2,15 +2,20 @@ import { useState, useEffect } from 'react'
 import { Shell, GitBranch, Info, Activity, RefreshCw, Ghost } from 'lucide-react'
 import { getBaseUrl } from '../utils/api'
 import { PersonaLab } from './PersonaLab'
+import { Terminal } from './Terminal'
 
 interface UtilityPaneProps {
+  id: string
   cwd?: string
+  onVoiceMessage?: (message: string) => void
+  onPersonaCreated?: () => void
 }
 
-export const UtilityPane = ({ cwd }: UtilityPaneProps) => {
+export const UtilityPane = ({ id, cwd, onVoiceMessage, onPersonaCreated }: UtilityPaneProps) => {
   const [mode, setMode] = useState<'SHELL' | 'GIT' | 'INSPECTOR' | 'PERSONA_LAB'>('GIT')
   const [gitStatus, setGitStatus] = useState<string>('')
   const [loading, setLoading] = useState(false)
+  const utilitySessionId = `utility-${id}`
 
   const fetchGitStatus = async () => {
     if (!cwd) return
@@ -133,16 +138,28 @@ export const UtilityPane = ({ cwd }: UtilityPaneProps) => {
         )}
 
         {mode === 'SHELL' && (
-          <div className="p-8 flex flex-col items-center justify-center h-full text-center space-y-3 opacity-60">
-            <Shell className="w-8 h-8 text-slate-700" />
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Secondary Shell</p>
-              <p className="text-[10px] text-slate-600">Connect to this instance via PTY</p>
+          <div className="flex flex-col h-full">
+            <div className="flex-1 min-h-0">
+              <Terminal 
+                id={utilitySessionId} 
+                cwd={cwd} 
+                command="/bin/bash" 
+                onVoiceMessage={onVoiceMessage}
+              />
+            </div>
+            <div className="bg-slate-950 border-t border-slate-800 p-2 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+              <span className="flex items-center gap-2">
+                <Shell className="w-3 h-3 text-blue-500" />
+                UTILITY_SESSION: {utilitySessionId}
+              </span>
+              <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                {cwd}
+              </span>
             </div>
           </div>
         )}
 
-        {mode === 'PERSONA_LAB' && <PersonaLab />}
+        {mode === 'PERSONA_LAB' && <PersonaLab onCreated={onPersonaCreated} />}
       </div>
     </div>
   )

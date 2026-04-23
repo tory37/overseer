@@ -2,6 +2,7 @@ import asyncio
 import os
 import json
 import uvicorn
+import logging
 from typing import Optional, List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +14,9 @@ from .git_utils import GitManager
 from backend.file_system_api import list_directory_contents
 from pydantic import BaseModel
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 class FileSystemPath(BaseModel):
     path: str
 
@@ -20,6 +24,7 @@ class NewSessionRequest(BaseModel):
     name: str
     cwd: str
     personaId: Optional[str] = None
+    command: Optional[str] = None # Added command field
 
 app = FastAPI()
 store = Store()
@@ -53,7 +58,7 @@ async def create_session(request: NewSessionRequest):
         if not persona:
             raise HTTPException(status_code=404, detail=f"Persona with ID '{request.personaId}' not found")
     
-    session_id = await session_manager.create_session(request.name, request.cwd, persona)
+    session_id = await session_manager.create_session(request.name, request.cwd, persona, request.command) # Pass command
     return {"id": session_id}
 
 @app.get("/api/personas")
@@ -157,66 +162,197 @@ async def git_status(cwd: str):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.websocket("/ws/voice_test")
+async def voice_test_websocket(websocket: WebSocket, sessionId: str = Query(...)):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            try:
+                msg = json.loads(data)
+                message_content = msg.get("message")
+                if message_content and sessionId:
+                    session = session_manager.get_session(sessionId)
+                    if not session:
+                        # Try to recover from store
+                        session_tab = next((s for s in store.config.sessions if s.id == sessionId), None)
+                        if session_tab:
+                            logger.info(f"Recovering session {sessionId} for voice test")
+                            persona = None
+                            if session_tab.personaId:
+                                persona = next((p for p in store.config.personas if p.id == session_tab.personaId), None)
+                            
+                            await session_manager.create_session(
+                                name=session_tab.name,
+                                cwd=session_tab.cwd,
+                                persona=persona,
+                                command=session_tab.command or "/bin/bash",
+                                session_id=sessionId
+                            )
+                            session = session_manager.get_session(sessionId)
+                    
+                    if session:
+                        voice_message = f"<voice>{message_content}</voice>"
+                        for q in session.queues:
+                            try:
+                                q.put_nowait(voice_message.encode())
+                            except asyncio.QueueFull:
+                                pass # Client queue is full, skip this client
+                        await websocket.send_text(f"Sent voice message to session {sessionId}")
+                    else:
+                        await websocket.send_text(f"Error: Session {sessionId} not found and could not be recovered")
+                else:
+                    await websocket.send_text("Error: Missing 'message' in payload")
+            except json.JSONDecodeError:
+                await websocket.send_text("Error: Invalid JSON format")
+            except Exception as e:
+                await websocket.send_text(f"An error occurred: {e}")
+    except WebSocketDisconnect:
+        logger.info(f"Voice test WebSocket disconnected for session {sessionId}")
+
 @app.websocket("/ws/terminal")
 async def terminal_websocket(
     websocket: WebSocket, 
     sessionId: str = Query(...),
     cwd: Optional[str] = Query(None),
-    command: Optional[str] = Query("/bin/bash")
+    command: Optional[str] = Query("/bin/bash"),
+    personaId: Optional[str] = Query(None)
 ):
     await websocket.accept()
+    logger.info(f"Terminal WebSocket connection accepted for session {sessionId}")
     
     session = session_manager.get_session(sessionId)
     if not session:
-        print(f"DEBUG: Starting new PTY for session {sessionId} with command='{command}' cwd='{cwd}'")
-        pty = PtyManager(cwd=cwd, command=command)
-        try:
-            pty.start()
-            session_manager.register(sessionId, pty)
-            session = session_manager.get_session(sessionId)
-        except Exception as e:
-            print(f"DEBUG: Failed to start PTY: {e}")
-            await websocket.send_text(f"\r\n[Overseer] Failed to start process: {e}\r\n")
-            await websocket.close()
-            return
-    else:
-        print(f"DEBUG: Attaching to existing PTY for session {sessionId}")
-        # Send existing buffer immediately
-        await websocket.send_text(session.pty.get_buffer().decode(errors='replace'))
+        if cwd:
+            logger.info(f"Creating session on-the-fly for {sessionId} in {cwd} with persona {personaId}")
+            name = sessionId
+            session_tab = next((s for s in store.config.sessions if s.id == sessionId), None)
+            if session_tab:
+                name = session_tab.name
+                if not personaId:
+                    personaId = session_tab.personaId
+            
+            persona = None
+            if personaId:
+                persona = next((p for p in store.config.personas if p.id == personaId), None)
 
-    # Subscribe to the session's broadcast queue
+            try:
+                await session_manager.create_session(
+                    name=name,
+                    cwd=cwd,
+                    persona=persona,
+                    command=command,
+                    session_id=sessionId
+                )
+                session = session_manager.get_session(sessionId)
+            except Exception as e:
+                logger.error(f"Failed to create session {sessionId}: {e}")
+                await websocket.close(code=1011, reason=f"Failed to create session: {e}")
+                return
+        else:
+            logger.warning(f"Session {sessionId} not found and no cwd provided for on-the-fly creation")
+            await websocket.close(code=4004, reason=f"Session {sessionId} not found and no cwd provided")
+            return
+
+    if not session:
+        logger.error(f"Session {sessionId} still None after creation attempt")
+        await websocket.close(code=1011, reason="Failed to initialize session")
+        return
+
     queue = session.subscribe()
+    
+    # Send existing buffer to the client immediately upon reconnection
+    try:
+        buffer = session.pty.get_buffer()
+        if buffer:
+            # Attempt to decode as UTF-8, replacing errors
+            text_buffer = buffer.decode('utf-8', errors='replace')
+            await websocket.send_text(text_buffer)
+    except Exception as e:
+        logger.error(f"Error sending buffer to WS for session {sessionId}: {e}")
 
     async def pty_to_ws():
         try:
             while True:
                 data = await queue.get()
-                await websocket.send_text(data.decode(errors='replace'))
+                if data:
+                    try:
+                        # Attempt to decode as UTF-8, replacing errors to avoid crashes
+                        text_data = data.decode('utf-8', errors='replace')
+                        await websocket.send_text(text_data)
+                    except Exception as e:
+                        logger.error(f"Error sending data to WS for session {sessionId}: {e}")
+                queue.task_done()
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
-            print(f"PTY to WS error for session {sessionId}: {e}")
-        finally:
-            session.unsubscribe(queue)
-            if websocket.client_state.name != 'DISCONNECTED':
-                await websocket.close()
+            logger.error(f"pty_to_ws error for session {sessionId}: {e}")
 
     async def ws_to_pty():
         try:
             while True:
-                data = await websocket.receive_text()
+                message = await websocket.receive_text()
                 try:
-                    msg = json.loads(data)
+                    msg = json.loads(message)
                     if msg.get("type") == "input":
-                        session.pty.write(msg.get("data", ""))
+                        input_data = msg.get("data")
+                        if input_data and session.pty.is_alive():
+                            session.pty.write(input_data)
                     elif msg.get("type") == "resize":
-                        session.pty.resize(msg.get("rows"), msg.get("cols"))
+                        cols = msg.get("cols")
+                        rows = msg.get("rows")
+                        if cols and rows:
+                            session.pty.resize(rows, cols)
                 except json.JSONDecodeError:
-                    session.pty.write(data)
+                    if message and session.pty.is_alive():
+                        session.pty.write(message)
         except WebSocketDisconnect:
-            print(f"DEBUG: WebSocket disconnected by client for session {sessionId}")
+            raise
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
-            print(f"WS to PTY error for session {sessionId}: {e}")
+            logger.error(f"ws_to_pty error for session {sessionId}: {e}")
 
-    await asyncio.gather(pty_to_ws(), ws_to_pty())
+    async def monitor_pty():
+        try:
+            while session.pty.is_alive():
+                await asyncio.sleep(1)
+            logger.info(f"PTY for session {sessionId} has exited. Closing WebSocket.")
+            await websocket.close(code=1000, reason="PTY process exited")
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"monitor_pty error for session {sessionId}: {e}")
+
+    tasks = [
+        asyncio.create_task(pty_to_ws(), name=f"pty_to_ws_{sessionId}"),
+        asyncio.create_task(ws_to_pty(), name=f"ws_to_pty_{sessionId}"),
+        asyncio.create_task(monitor_pty(), name=f"monitor_pty_{sessionId}")
+    ]
+    
+    try:
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for task in done:
+            if not task.cancelled():
+                exception = task.exception()
+                if exception and not isinstance(exception, WebSocketDisconnect):
+                    raise exception
+    except WebSocketDisconnect:
+        logger.info(f"Terminal WebSocket disconnected for session {sessionId}")
+    except Exception as e:
+        logger.error(f"Terminal WebSocket error for session {sessionId}: {e}")
+    finally:
+        logger.info(f"Cleaning up WebSocket for session {sessionId}")
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        
+        # Wait for all tasks to complete their cancellation
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+            
+        session.unsubscribe(queue)
+        # The session should only be unregistered when explicitly closed or pruned by a background task.
 
 # Static files serving (for production)
 static_path = os.path.join(os.path.dirname(__file__), "static")

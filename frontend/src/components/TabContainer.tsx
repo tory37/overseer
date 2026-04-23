@@ -1,31 +1,58 @@
 import { Panel, Group, Separator } from 'react-resizable-panels'
 import { Terminal } from './Terminal'
 import { UtilityPane } from './UtilityPane'
-import { useState } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { PixelAgent } from './PixelAgent'
+import type { Persona } from '../utils/api'
 
 interface TabContainerProps {
   id: string
   cwd?: string
   command?: string
+  personaId?: string | null
+  personas: Persona[]
+  onPersonaCreated?: () => void
 }
 
-export const TabContainer = ({ id, cwd, command }: TabContainerProps) => {
+export const TabContainer = ({ id, cwd, command, personaId, personas, onPersonaCreated }: TabContainerProps) => {
   const [voiceMessage, setVoiceMessage] = useState<string | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const handleVoiceMessage = (message: string) => {
+  const handleVoiceMessage = useCallback((message: string) => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+    
     setVoiceMessage(message)
-    // Optionally clear the message after some time
-    setTimeout(() => setVoiceMessage(null), 5000); // Clear after 5 seconds
-  }
+    
+    // Set a new timeout to clear the message after 8 seconds
+    timeoutRef.current = setTimeout(() => {
+      setVoiceMessage(null)
+      timeoutRef.current = null
+    }, 8000)
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
+
+  const activePersona = personas.find(p => p.id === personaId)
+  const avatarId = activePersona?.avatarId || 'overseer'
+  const personaName = activePersona?.name || 'Overseer'
 
   return (
     <div className="flex-1 w-full h-full overflow-hidden flex flex-col">
       <Group orientation="horizontal">
         <Panel defaultSize={60} minSize={30}>
           <div className="h-full w-full bg-black/20 relative"> {/* Added relative for PixelAgent positioning */}
-            <Terminal id={id} cwd={cwd} command={command} onVoiceMessage={handleVoiceMessage} />
-            <PixelAgent message={voiceMessage} avatarId="overseer" /> {/* Render PixelAgent */}
+            <Terminal id={id} cwd={cwd} command={command} personaId={personaId} onVoiceMessage={handleVoiceMessage} />
+            <PixelAgent message={voiceMessage} avatarId={avatarId} personaName={personaName} /> {/* Render PixelAgent with correct avatar and name */}
           </div>
         </Panel>
         
@@ -35,7 +62,7 @@ export const TabContainer = ({ id, cwd, command }: TabContainerProps) => {
         
         <Panel defaultSize={40} minSize={20}>
           <div className="h-full w-full bg-slate-950/50 border-l border-slate-900">
-            <UtilityPane cwd={cwd} />
+            <UtilityPane id={id} cwd={cwd} onVoiceMessage={handleVoiceMessage} onPersonaCreated={onPersonaCreated} />
           </div>
         </Panel>
       </Group>
