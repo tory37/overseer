@@ -27,13 +27,18 @@ export const getPersonas = async (): Promise<Persona[]> => {
   return response.json();
 };
 
-export const createSession = async (personaId: string | null = null): Promise<Session> => {
+export const createSession = async (
+  name: string,
+  cwd: string,
+  command: string,
+  personaId: string | null,
+): Promise<Session> => {
   const response = await fetch(`${getBaseUrl()}/api/sessions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ personaId }),
+    body: JSON.stringify({ name, cwd, command, personaId }),
   });
   if (!response.ok) {
     throw new Error(`Error creating session: ${response.statusText}`);
