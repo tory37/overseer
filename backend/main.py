@@ -141,13 +141,14 @@ async def terminal_websocket(
 ):
     await websocket.accept()
     
-    pty = session_manager.get(sessionId)
-    if not pty:
+    session = session_manager.get_session(sessionId)
+    if not session:
         print(f"DEBUG: Starting new PTY for session {sessionId} with command='{command}' cwd='{cwd}'")
         pty = PtyManager(cwd=cwd, command=command)
         try:
             pty.start()
             session_manager.register(sessionId, pty)
+            session = session_manager.get_session(sessionId)
         except Exception as e:
             print(f"DEBUG: Failed to start PTY: {e}")
             await websocket.send_text(f"\r\n[Overseer] Failed to start process: {e}\r\n")
@@ -156,20 +157,20 @@ async def terminal_websocket(
     else:
         print(f"DEBUG: Attaching to existing PTY for session {sessionId}")
         # Send existing buffer immediately
-        await websocket.send_text(pty.get_buffer().decode(errors='replace'))
+        await websocket.send_text(session.pty.get_buffer().decode(errors='replace'))
+
+    # Subscribe to the session's broadcast queue
+    queue = session.subscribe()
 
     async def pty_to_ws():
         try:
-            while pty.is_alive():
-                data = await asyncio.to_thread(pty.read)
-                if data:
-                    await websocket.send_text(data.decode(errors='replace'))
-                await asyncio.sleep(0.01)
-            print("DEBUG: PTY process exited")
-            await websocket.send_text("\r\n[Overseer] Process exited.\r\n")
+            while True:
+                data = await queue.get()
+                await websocket.send_text(data.decode(errors='replace'))
         except Exception as e:
-            print(f"PTY to WS error: {e}")
+            print(f"PTY to WS error for session {sessionId}: {e}")
         finally:
+            session.unsubscribe(queue)
             if websocket.client_state.name != 'DISCONNECTED':
                 await websocket.close()
 
@@ -180,16 +181,15 @@ async def terminal_websocket(
                 try:
                     msg = json.loads(data)
                     if msg.get("type") == "input":
-                        pty.write(msg.get("data", ""))
+                        session.pty.write(msg.get("data", ""))
                     elif msg.get("type") == "resize":
-                        pty.resize(msg.get("rows"), msg.get("cols"))
+                        session.pty.resize(msg.get("rows"), msg.get("cols"))
                 except json.JSONDecodeError:
-                    # Fallback for raw strings to ensure backward compatibility
-                    pty.write(data)
+                    session.pty.write(data)
         except WebSocketDisconnect:
-            print("DEBUG: WebSocket disconnected by client")
+            print(f"DEBUG: WebSocket disconnected by client for session {sessionId}")
         except Exception as e:
-            print(f"WS to PTY error: {e}")
+            print(f"WS to PTY error for session {sessionId}: {e}")
 
     await asyncio.gather(pty_to_ws(), ws_to_pty())
 

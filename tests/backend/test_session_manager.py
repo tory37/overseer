@@ -1,36 +1,80 @@
+import pytest
+import anyio
+import asyncio
+import time
 from backend.session_manager import SessionManager
 from backend.pty_manager import PtyManager
 
-def test_session_manager_registration():
+@pytest.fixture(autouse=True)
+async def cleanup_sessions():
+    yield
+    SessionManager().clear()
+
+@pytest.mark.anyio
+async def test_session_manager_registration():
     sm = SessionManager()
     pty = PtyManager(command="bash")
-    sm.register("test-session", pty)
-    assert sm.get("test-session") == pty
-    sm.unregister("test-session")
-    assert sm.get("test-session") is None
+    sm.register("test-reg", pty)
+    session = sm.get_session("test-reg")
+    assert session is not None
+    assert session.pty == pty
+    sm.unregister("test-reg")
+    assert sm.get_session("test-reg") is None
 
-def test_session_manager_singleton():
+@pytest.mark.anyio
+async def test_session_manager_singleton():
     sm1 = SessionManager()
     sm2 = SessionManager()
     assert sm1 is sm2
 
-def test_session_manager_prune_stale():
-    import time
+@pytest.mark.anyio
+async def test_session_manager_prune_stale():
     sm = SessionManager()
     pty = PtyManager(command="bash")
     sm.register("stale-session", pty)
     
+    session = sm.get_session("stale-session")
     # Manually backdate last_accessed
-    sm._sessions["stale-session"]["last_accessed"] = time.time() - 100
+    session.last_accessed = time.time() - 100
     
     sm.prune_stale(50)
-    assert sm.get("stale-session") is None
+    assert sm.get_session("stale-session") is None
 
-def test_session_manager_unregister_stops_pty():
+@pytest.mark.anyio
+async def test_session_manager_unregister_stops_pty():
     sm = SessionManager()
     pty = PtyManager(command="sleep 100")
     pty.start()
     assert pty.is_alive()
     sm.register("to-stop", pty)
     sm.unregister("to-stop")
+    # Small sleep to allow process to terminate
+    await anyio.sleep(0.1)
     assert not pty.is_alive()
+
+@pytest.mark.anyio
+async def test_session_subscription():
+    sm = SessionManager()
+    # Use a command that continuously outputs data until killed
+    # This avoids any race where the process finishes before we subscribe
+    pty = PtyManager(command="sh -c 'while true; do echo ready; sleep 0.1; done'", use_shell=False)
+    pty.start()
+    sm.register("sub-test", pty)
+    session = sm.get_session("sub-test")
+    
+    queue = session.subscribe()
+    
+    # Wait for data from pty
+    found = False
+    try:
+        with anyio.fail_after(5.0):
+            while not found:
+                data = await queue.get()
+                if b"ready" in data:
+                    found = True
+    except TimeoutError:
+        pytest.fail("Timed out waiting for 'ready' in PTY output")
+    
+    assert found
+    session.unsubscribe(queue)
+    sm.unregister("sub-test")

@@ -27,6 +27,7 @@ function App() {
   const [taskName, setTaskName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const [isCreatingSession, setIsCreatingSession] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
 
   // Fetch sessions on load
   useEffect(() => {
@@ -36,12 +37,18 @@ function App() {
         if (Array.isArray(data) && data.length > 0) {
           setTabs(data)
         }
+        setIsLoaded(true)
       })
-      .catch(err => console.error("Failed to fetch sessions:", err))
+      .catch(err => {
+        console.error("Failed to fetch sessions:", err)
+        setIsLoaded(true)
+      })
   }, [])
 
   // Sync sessions to backend on change
   useEffect(() => {
+    if (!isLoaded) return;
+
     const syncSessions = async () => {
       try {
         await fetch(`${getBaseUrl()}/api/sessions`, {
@@ -62,6 +69,7 @@ function App() {
     const newTabs = tabs.map(t => ({ ...t, active: false }))
     setTabs([...newTabs, { id, name, cwd: path, command, active: true }])
     setIsCreatingSession(false)
+    setIsLoaded(true)
   }
 
   const handleStartTask = async (e: React.FormEvent) => {
@@ -98,10 +106,12 @@ function App() {
       newTabs[newTabs.length - 1].active = true
     }
     setTabs(newTabs)
+    setIsLoaded(true)
   }
 
   const setActive = (id: string) => {
     setTabs(tabs.map(t => ({ ...t, active: t.id === id })))
+    setIsLoaded(true)
   }
 
   const activeTab = tabs.find(t => t.active)

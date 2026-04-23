@@ -5,12 +5,17 @@ from collections import deque
 from ptyprocess import PtyProcess
 
 class PtyManager:
-    def __init__(self, command: str = None, cwd: str = None):
+    def __init__(self, command: str = None, cwd: str = None, use_shell: bool = True):
         # Detect default shell
         shell_executable = shutil.which(os.environ.get("SHELL", "bash")) or "/bin/bash"
         
+        if not use_shell and command:
+            if isinstance(command, list):
+                args = command
+            else:
+                args = shlex.split(command)
         # If no command or just requesting a shell, start an interactive shell
-        if not command or command in ["/bin/bash", "/bin/zsh", "bash", "zsh"]:
+        elif not command or command in ["/bin/bash", "/bin/zsh", "bash", "zsh"]:
             args = [shell_executable, "-i"]
         else:
             # Wrap the command in the shell with -ic to source dotfiles
