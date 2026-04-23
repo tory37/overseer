@@ -78,5 +78,11 @@ class Store:
         self.config.sessions = sessions
         self.save()
 
+    def get_persona(self, persona_id: str) -> Optional[Persona]:
+        for persona in self.config.personas:
+            if persona.id == persona_id:
+                return persona
+        return None
+
     def get_all(self) -> Dict[str, Any]:
         return self.config.dict()
