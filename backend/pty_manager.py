@@ -1,6 +1,7 @@
 import os
 import shlex
 import shutil
+from collections import deque
 from ptyprocess import PtyProcess
 
 class PtyManager:
@@ -22,6 +23,7 @@ class PtyManager:
         self.command = args
         self.cwd = cwd or os.getcwd()
         self.process = None
+        self.buffer = deque(maxlen=50)
 
     def start(self):
         self.process = PtyProcess.spawn(self.command, cwd=self.cwd)
@@ -30,9 +32,15 @@ class PtyManager:
         if not self.process:
             return b""
         try:
-            return self.process.read(max_bytes)
+            data = self.process.read(max_bytes)
+            if data:
+                self.buffer.append(data)
+            return data
         except EOFError:
             return b""
+
+    def get_buffer(self) -> bytes:
+        return b"".join(self.buffer)
 
     def write(self, data: str):
         if self.process:
