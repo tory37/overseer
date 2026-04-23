@@ -12,6 +12,12 @@ class Repo(BaseModel):
     path: str
     group_id: Optional[str] = None
 
+class Persona(BaseModel):
+    id: str
+    name: str
+    instructions: str
+    avatarId: str
+
 class Group(BaseModel):
     id: str
     name: str
@@ -28,6 +34,11 @@ class Config(BaseModel):
     repos: List[Repo] = []
     groups: List[Group] = []
     sessions: List[SessionTab] = []
+    personas: List[Persona] = [
+        Persona(id="senior", name="The Senior", instructions="You are a grumpy senior engineer. Be brief, cynical, and obsessed with DRY and clean code.", avatarId="senior-1"),
+        Persona(id="intern", name="The Intern", instructions="You are an over-eager intern. Use lots of emojis and be very enthusiastic about learning.", avatarId="intern-1"),
+        Persona(id="cyberpunk", name="The Cyber-Punk", instructions="You are a cynical netrunner. Use glitchy metaphors and treat coding like a battlefield.", avatarId="cyber-1")
+    ]
 
 class Store:
     def __init__(self):
