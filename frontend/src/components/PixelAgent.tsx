@@ -10,13 +10,27 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({ message, avatarId }) => 
     return null;
   }
 
+  const [avatarError, setAvatarError] = React.useState(false);
+
+  React.useEffect(() => {
+    setAvatarError(false); // Reset error state when avatarId changes
+  }, [avatarId]);
+
   // Basic styling for a speech bubble and an avatar placeholder
   return (
     <div className="absolute bottom-4 left-4 flex items-end space-x-2">
-      <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg font-bold">
-        {/* Replace with actual avatar image later */}
-        {avatarId.substring(0, 1).toUpperCase()} 
-      </div>
+      {avatarId && !avatarError ? (
+        <img
+          src={`/assets/avatars/${avatarId}.png`}
+          alt="Agent Avatar"
+          className="w-12 h-12 rounded-full object-cover"
+          onError={() => setAvatarError(true)}
+        />
+      ) : (
+        <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg font-bold">
+          {avatarId ? avatarId.substring(0, 1).toUpperCase() : '?'}
+        </div>
+      )}
       <div className="relative bg-gray-700 text-white p-3 rounded-lg shadow-lg max-w-xs break-words">
         {message}
         <div className="absolute left-0 bottom-2 w-0 h-0 border-t-8 border-t-transparent border-r-8 border-r-gray-700 border-b-8 border-b-transparent transform -translate-x-full"></div>
