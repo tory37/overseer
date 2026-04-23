@@ -106,7 +106,16 @@ class SessionManager:
                 "You MUST wrap all non-technical conversational chatter in <voice> tags. "
                 "Do not wrap code, commands, or technical output in these tags."
             )
-            env["GEMINI_SYSTEM_PROMPT_OVERRIDE"] = instructions
+            # Gemini CLI expects GEMINI_SYSTEM_MD to point to a file path, not the text directly.
+            # We'll write to a temporary file.
+            temp_path = f"/tmp/overseer_persona_{session_id}.md"
+            try:
+                with open(temp_path, "w") as f:
+                    f.write(instructions)
+                env["GEMINI_SYSTEM_MD"] = temp_path
+                logger.info(f"Created persona instructions at {temp_path}")
+            except Exception as e:
+                logger.error(f"Failed to create temporary persona file: {e}")
             
         # Use command if provided, otherwise default to interactive shell
         pty = PtyManager(cwd=cwd, env=env, command=command)
@@ -129,6 +138,14 @@ class SessionManager:
         session = self._sessions.pop(session_id, None)
         if session:
             session.stop()
+            # Clean up temporary persona file if it exists
+            temp_path = f"/tmp/overseer_persona_{session_id}.md"
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                    logger.info(f"Cleaned up temporary persona file at {temp_path}")
+                except Exception as e:
+                    logger.error(f"Failed to delete temporary persona file {temp_path}: {e}")
 
     def clear(self):
         for sid in list(self._sessions.keys()):
