@@ -90,8 +90,6 @@ function App() {
         setTabs(tabs.map(t => ({ ...t, active: false })))
       }} />
 
-      {isCreatingSession && <NewSessionOverlay />}
-
       {/* Main Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_50%_0%,rgba(30,41,59,0.2),transparent)]">
         {/* Tabs Bar */}
@@ -136,7 +134,12 @@ function App() {
 
         {/* Content View */}
         <div className="flex-1 flex overflow-hidden relative">
-          {activeTab ? (
+          {isCreatingSession ? (
+            <NewSessionOverlay 
+              onClose={() => setIsCreatingSession(false)}
+              onLaunch={(name, path, command) => openTab(name, path, command)}
+            />
+          ) : activeTab ? (
             <TabContainer key={activeTab.id} cwd={activeTab.cwd} command={activeTab.command} />
           ) : selectedRepo ? (
             <div className="flex-1 flex flex-col p-12 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500">
