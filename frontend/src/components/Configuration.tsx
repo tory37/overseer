@@ -1,22 +1,16 @@
 import React from 'react';
-import { useViewMode } from '../utils/useViewMode';
+import { Settings } from 'lucide-react';
 
 export const Configuration: React.FC = () => {
-  const { isPersonaView, toggleViewMode } = useViewMode();
-
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Configuration</h2>
-      <div className="flex items-center justify-between p-4 border rounded">
-        <span>Persona-based View</span>
-        <button
-          onClick={toggleViewMode}
-          className={`px-4 py-2 rounded ${
-            isPersonaView ? 'bg-blue-600 text-white' : 'bg-gray-200'
-          }`}
-        >
-          {isPersonaView ? 'Enabled' : 'Disabled'}
-        </button>
+    <div className="flex-1 flex flex-col bg-slate-950 overflow-hidden">
+      <div className="px-8 py-6 border-b border-slate-800 flex-shrink-0">
+        <h2 className="text-xl font-bold text-slate-100">Configuration</h2>
+        <p className="text-xs text-slate-500 mt-0.5">Application settings</p>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center text-slate-600 gap-4">
+        <Settings className="w-10 h-10" />
+        <p className="text-sm font-medium">No settings available yet.</p>
       </div>
     </div>
   );
