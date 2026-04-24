@@ -2,7 +2,7 @@ import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost, Settings, Search
 import { Sidebar } from './components/Sidebar'
 import { TabContainer } from './components/TabContainer'
 import { NewSessionOverlay } from './components/NewSessionOverlay'
-import { PersonaLab } from './components/PersonaLab'
+import { PersonaStudio } from './components/PersonaStudio'
 import { getBaseUrl, createSession, type Persona, getPersonas } from './utils/api'
 
 interface Repo {
@@ -234,9 +234,7 @@ function App() {
           ) : activeTab ? (
             <>
               {activeTab.type === 'persona-lab' && (
-                <div className="flex-1 overflow-y-auto bg-slate-950">
-                  <PersonaLab onCreated={() => getPersonas().then(setPersonas)} />
-                </div>
+                <PersonaStudio />
               )}
               {activeTab.type === 'agent' && (
                 <TabContainer 
