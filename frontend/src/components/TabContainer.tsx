@@ -4,6 +4,8 @@ import { UtilityPane } from './UtilityPane'
 import { useState, useCallback, useRef } from 'react'
 import { PixelAgent } from './PixelAgent'
 import type { Persona } from '../utils/api'
+import { DEFAULT_AVATAR_CONFIG } from '../utils/api';
+import type { AvatarConfig } from '../utils/api';
 
 interface TabContainerProps {
   id: string
@@ -69,7 +71,7 @@ export const TabContainer = ({ id, cwd, command, personaId, personas, onPersonaC
   }, [])
 
   const activePersona = personas.find(p => p.id === personaId)
-  const avatarId = activePersona?.avatarId || 'overseer'
+  const avatarConfig: AvatarConfig = activePersona?.avatarConfig ?? DEFAULT_AVATAR_CONFIG;
   const personaName = activePersona?.name || 'Overseer'
 
   return (
@@ -78,11 +80,11 @@ export const TabContainer = ({ id, cwd, command, personaId, personas, onPersonaC
         {/* Panel 1: Agent Chat */}
         <Panel defaultSize={30} minSize={20}>
           <div className="h-full w-full bg-slate-950 border-r border-slate-900 flex flex-col">
-            <PixelAgent 
-              messages={messages} 
+            <PixelAgent
+              messages={messages}
               isWorking={isWorking}
-              avatarId={avatarId} 
-              personaName={personaName} 
+              avatarConfig={avatarConfig}
+              personaName={personaName}
               onSendMessage={handleSendMessage}
             />
           </div>

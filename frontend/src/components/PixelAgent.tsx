@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Send, Copy, Check } from 'lucide-react';
+import { AgentAvatar } from './AgentAvatar';
+import type { AvatarConfig } from '../utils/api';
 
 interface VoiceMessage {
   id: string;
@@ -11,20 +13,24 @@ interface VoiceMessage {
 interface PixelAgentProps {
   messages: VoiceMessage[];
   isWorking: boolean;
-  avatarId: string;
+  avatarConfig: AvatarConfig;
   personaName?: string;
   onSendMessage?: (text: string) => void;
 }
 
-export const PixelAgent: React.FC<PixelAgentProps> = ({ messages, isWorking, avatarId, personaName, onSendMessage }) => {
-  const [avatarError, setAvatarError] = useState(false);
+export const PixelAgent: React.FC<PixelAgentProps> = ({ messages, isWorking, avatarConfig, personaName, onSendMessage }) => {
+  const [talkingUntil, setTalkingUntil] = useState(0);
   const [inputValue, setInputValue] = useState('');
   const [copied, setCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setAvatarError(false);
-  }, [avatarId]);
+    if (messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.sender !== 'agent') return;
+    const wordCount = lastMsg.text.split(/\s+/).filter(Boolean).length;
+    setTalkingUntil(Date.now() + wordCount * 80);
+  }, [messages]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -32,10 +38,12 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({ messages, isWorking, ava
     }
   }, [messages, isWorking]);
 
+  const avatarState = isWorking ? 'thinking' : talkingUntil > Date.now() ? 'talking' : 'idle';
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
-    
+
     onSendMessage?.(inputValue);
     setInputValue('');
   };
@@ -53,19 +61,8 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({ messages, isWorking, ava
       <div className="p-4 border-b border-slate-900 bg-slate-900/50 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="relative">
-            {avatarId && !avatarError ? (
-              <img
-                src={`/assets/avatars/${avatarId}.svg`}
-                alt="Agent Avatar"
-                className="w-10 h-10 rounded-xl object-cover border border-slate-700 bg-slate-900"
-                onError={() => setAvatarError(true)}
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-lg font-black border border-slate-700">
-                {avatarId ? avatarId.substring(0, 1).toUpperCase() : '?'}
-              </div>
-            )}
-            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-950 ${isWorking ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
+            <AgentAvatar avatarConfig={avatarConfig} state={avatarState} talkingUntil={talkingUntil} size={40} />
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-952 ${isWorking ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-200">{personaName || 'Overseer'}</h3>
@@ -74,8 +71,8 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({ messages, isWorking, ava
             </p>
           </div>
         </div>
-        
-        <button 
+
+        <button
           onClick={handleCopyAll}
           className="p-1.5 hover:bg-slate-800 text-slate-500 hover:text-slate-200 rounded-md transition-colors"
           title="Copy all messages"
@@ -97,8 +94,8 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({ messages, isWorking, ava
           <div key={msg.id} className={`animate-in fade-in slide-in-from-bottom-2 duration-300 flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`flex flex-col space-y-1 max-w-[85%] ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
               <div className={`rounded-2xl p-3 border shadow-sm ${
-                msg.sender === 'user' 
-                  ? 'bg-blue-600/20 border-blue-500/30 rounded-tr-none text-right' 
+                msg.sender === 'user'
+                  ? 'bg-blue-600/20 border-blue-500/30 rounded-tr-none text-right'
                   : 'bg-slate-900/80 border-slate-800/50 rounded-tl-none'
               }`}>
                 <p className={`text-sm leading-relaxed whitespace-pre-wrap ${msg.sender === 'user' ? 'text-blue-100' : 'text-slate-200'}`}>
