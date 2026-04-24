@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Folder, Search, Settings, Plus, GitBranch, Terminal, Check, UserCircle } from 'lucide-react'
+import { Folder, Search, Settings, Plus, GitBranch, Terminal, Check, Ghost } from 'lucide-react'
 import { getBaseUrl } from '../utils/api'
 import Modal from './Modal' // Import the new Modal component
 import FileBrowser from './FileBrowser' // Import the new FileBrowser component
@@ -155,7 +155,7 @@ export const Sidebar = ({ onSelectRepo, onNewSession, onOpenSpecialTab }: Sideba
           onClick={() => onOpenSpecialTab('persona-lab')}
           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-slate-800 text-sm text-slate-400 hover:text-slate-200 transition-colors"
         >
-          <UserCircle className="w-4 h-4" />
+          <Ghost className="w-4 h-4" />
           <span>Persona Studio</span>
         </button>
         <button 

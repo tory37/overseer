@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react'
-import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost, Rocket, Check, GitBranch, Info, Plus, Trash2, Folder, Home } from 'lucide-react' // Added Folder and Home icons
+import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost, Settings, Search, Rocket, Check, GitBranch, Info, Plus, Trash2, Folder, Home } from 'lucide-react'
 import { Sidebar } from './components/Sidebar'
 import { TabContainer } from './components/TabContainer'
 import { NewSessionOverlay } from './components/NewSessionOverlay'
@@ -191,9 +190,9 @@ function App() {
               {tab.type === 'persona-lab' ? (
                 <Ghost className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
               ) : tab.type === 'config' ? (
-                <Maximize2 className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
+                <Settings className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
               ) : tab.type === 'search' ? (
-                <Layout className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
+                <Search className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
               ) : (
                 <TerminalIcon className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
               )}
@@ -233,21 +232,34 @@ function App() {
               onLaunch={(name, path, command, personaId) => openTab(name, path, command, personaId)}
             />
           ) : activeTab ? (
-            activeTab.type === 'persona-lab' ? (
-              <div className="flex-1 overflow-y-auto bg-slate-950">
-                <PersonaLab onCreated={() => getPersonas().then(setPersonas)} />
-              </div>
-            ) : (
-              <TabContainer 
-                key={activeTab.id} 
-                id={activeTab.id} 
-                cwd={activeTab.cwd} 
-                command={activeTab.command} 
-                personaId={activeTab.personaId} 
-                personas={personas}
-                onPersonaCreated={() => getPersonas().then(setPersonas)}
-              />
-            )
+            <>
+              {activeTab.type === 'persona-lab' && (
+                <div className="flex-1 overflow-y-auto bg-slate-950">
+                  <PersonaLab onCreated={() => getPersonas().then(setPersonas)} />
+                </div>
+              )}
+              {activeTab.type === 'agent' && (
+                <TabContainer 
+                  key={activeTab.id} 
+                  id={activeTab.id} 
+                  cwd={activeTab.cwd} 
+                  command={activeTab.command} 
+                  personaId={activeTab.personaId} 
+                  personas={personas}
+                  onPersonaCreated={() => getPersonas().then(setPersonas)}
+                />
+              )}
+              {activeTab.type === 'config' && (
+                <div className="flex-1 flex items-center justify-center bg-slate-950 text-slate-500 font-medium">
+                  Configuration (Coming Soon)
+                </div>
+              )}
+              {activeTab.type === 'search' && (
+                <div className="flex-1 flex items-center justify-center bg-slate-950 text-slate-500 font-medium">
+                  Global Search (Coming Soon)
+                </div>
+              )}
+            </>
           ) : selectedRepo ? (
             <div className="flex-1 flex flex-col p-12 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center justify-between mb-12">
