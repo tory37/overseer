@@ -5,6 +5,7 @@ import { TabLayout } from './components/TabLayout'
 import { TabContainer } from './components/TabContainer'
 import { NewSessionOverlay } from './components/NewSessionOverlay'
 import PersonaStudio from './components/PersonaStudio'
+import { Configuration } from './components/Configuration'
 import { getBaseUrl, createSession, type Persona, getPersonas } from './utils/api'
 
 interface Repo {
@@ -201,9 +202,7 @@ function App() {
             />
           )}
           {activeTab.type === 'config' && (
-            <div className="flex-1 flex items-center justify-center bg-slate-950 text-slate-500 font-medium">
-              Configuration (Coming Soon)
-            </div>
+            <Configuration />
           )}
           {activeTab.type === 'search' && (
             <div className="flex-1 flex items-center justify-center bg-slate-950 text-slate-500 font-medium">
