@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Persona } from '../utils/api';
 import { getPersonas, createPersona, updatePersona, deletePersona } from '../utils/api';
-import { Plus, Search, Save, Trash2, X, Edit, Ghost } from 'lucide-react';
+import type { AvatarConfig } from '../utils/api';
+import { DEFAULT_AVATAR_CONFIG } from '../utils/api';
+import { AgentAvatar } from './AgentAvatar';
+import { Plus, Search, Save, Trash2, X, Ghost } from 'lucide-react';
 
 const PersonaStudio: React.FC = () => {
     const [personas, setPersonas] = useState<Persona[]>([]);
@@ -36,12 +39,22 @@ const PersonaStudio: React.FC = () => {
 
     const handleCreateNew = () => {
         setSelectedPersona(null);
-        setFormData({ id: '', name: '', instructions: '', avatarId: '' });
+        setFormData({ id: '', name: '', instructions: '', avatarConfig: { ...DEFAULT_AVATAR_CONFIG } });
         setIsCreatingNew(true);
     };
 
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleAvatarConfigChange = (field: keyof AvatarConfig, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            avatarConfig: {
+                ...(prev.avatarConfig ?? DEFAULT_AVATAR_CONFIG),
+                [field]: value,
+            },
+        }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -207,16 +220,103 @@ const PersonaStudio: React.FC = () => {
                                 required
                             />
                         </div>
-                         <div>
-                            <label htmlFor="avatarId" className="block text-sm font-semibold text-slate-300 mb-1">Avatar ID</label>
-                             <input
-                                type="text"
-                                name="avatarId"
-                                value={formData.avatarId || ''}
-                                onChange={handleFormChange}
-                                className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                placeholder="e.g., 'robot-1'"
-                            />
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-300 mb-3">Avatar</label>
+                            <div className="flex gap-8">
+                                {/* Left: controls */}
+                                <div className="flex-1 space-y-4">
+                                    <div>
+                                        <label className="block text-xs text-slate-400 mb-1">Eyes</label>
+                                        <select
+                                            value={formData.avatarConfig?.eyes ?? 'variant01'}
+                                            onChange={e => handleAvatarConfigChange('eyes', e.target.value)}
+                                            className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        >
+                                            <option value="variant01">Default</option>
+                                            <option value="variant09">Narrow</option>
+                                            <option value="variant06">Wide</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-400 mb-1">Mouth</label>
+                                        <select
+                                            value={formData.avatarConfig?.mouth ?? 'variant04'}
+                                            onChange={e => handleAvatarConfigChange('mouth', e.target.value)}
+                                            className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        >
+                                            <option value="variant04">Smile</option>
+                                            <option value="variant09">Open</option>
+                                            <option value="variant14">Grin</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-400 mb-1">Hair</label>
+                                        <select
+                                            value={formData.avatarConfig?.hair ?? 'short01'}
+                                            onChange={e => handleAvatarConfigChange('hair', e.target.value)}
+                                            className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        >
+                                            <option value="short01">Short</option>
+                                            <option value="short02">Short Alt</option>
+                                            <option value="mohawk01">Mohawk</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-400 mb-2">Skin Tone</label>
+                                        <div className="flex gap-2 flex-wrap">
+                                            {['fcd5b0', 'f5cba7', 'd4a574', 'c68642', '8d5524', '4a2912'].map(hex => (
+                                                <button
+                                                    key={hex}
+                                                    type="button"
+                                                    onClick={() => handleAvatarConfigChange('skinColor', hex)}
+                                                    className={`w-7 h-7 rounded-md border-2 transition-all ${formData.avatarConfig?.skinColor === hex ? 'border-blue-400 scale-110' : 'border-transparent hover:border-slate-500'}`}
+                                                    style={{ backgroundColor: `#${hex}` }}
+                                                    title={`#${hex}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-400 mb-2">Hair Color</label>
+                                        <div className="flex gap-2 flex-wrap">
+                                            {['6b3a2a', '8b4513', '6b6b6b', 'f0c040', '00ff88', '1a1a1a', 'ff4444', '4444ff'].map(hex => (
+                                                <button
+                                                    key={hex}
+                                                    type="button"
+                                                    onClick={() => handleAvatarConfigChange('hairColor', hex)}
+                                                    className={`w-7 h-7 rounded-md border-2 transition-all ${formData.avatarConfig?.hairColor === hex ? 'border-blue-400 scale-110' : 'border-transparent hover:border-slate-500'}`}
+                                                    style={{ backgroundColor: `#${hex}` }}
+                                                    title={`#${hex}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-400 mb-2">Background</label>
+                                        <div className="flex gap-2 flex-wrap">
+                                            {['1e293b', '0f172a', '0a0a0f', '1a1a2e', '0d1117', '111827'].map(hex => (
+                                                <button
+                                                    key={hex}
+                                                    type="button"
+                                                    onClick={() => handleAvatarConfigChange('backgroundColor', hex)}
+                                                    className={`w-7 h-7 rounded-md border-2 transition-all ${formData.avatarConfig?.backgroundColor === hex ? 'border-blue-400 scale-110' : 'border-transparent hover:border-slate-500'}`}
+                                                    style={{ backgroundColor: `#${hex}` }}
+                                                    title={`#${hex}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* Right: live preview */}
+                                <div className="flex flex-col items-center gap-2 pt-2">
+                                    <AgentAvatar
+                                        avatarConfig={formData.avatarConfig ?? DEFAULT_AVATAR_CONFIG}
+                                        state="idle"
+                                        size={128}
+                                    />
+                                    <span className="text-xs text-slate-500">Preview</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
