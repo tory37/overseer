@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Ghost, Search, Settings, Terminal, Folder, Plus } from 'lucide-react';
 import type { Persona } from '../utils/api';
 import type { SpecialView } from './PersonaLayout';
+import { AgentAvatar } from './AgentAvatar';
+import { DEFAULT_AVATAR_CONFIG } from '../utils/api';
+import type { AvatarConfig } from '../utils/api';
 
 export interface SessionData {
   id: string;
@@ -23,11 +26,13 @@ export const SessionItem = ({ title, isActive, onClick }: { title: string; isAct
 
 const PersonaGroup = ({
   name,
+  avatarConfig,
   sessions,
   selectedSessionId,
   onSelectSession,
 }: {
   name: string;
+  avatarConfig: AvatarConfig;
   sessions: SessionData[];
   selectedSessionId: string | null;
   onSelectSession: (id: string) => void;
@@ -40,7 +45,7 @@ const PersonaGroup = ({
         className="w-full text-left font-bold text-slate-400 py-1.5 px-2 hover:text-white flex items-center gap-1 rounded-md hover:bg-slate-800/50 transition-colors"
       >
         <span className="text-[10px]">{expanded ? '▼' : '▶'}</span>
-        <Ghost className="w-3.5 h-3.5 ml-0.5" />
+        <AgentAvatar avatarConfig={avatarConfig} state="idle" size={32} />
         <span className="ml-1">{name}</span>
       </button>
       {expanded && (
@@ -89,7 +94,7 @@ export const PersonaSidebar = ({
 
   const namedGroups = personas
     .filter(p => grouped.has(p.id))
-    .map(p => ({ name: p.name, sessions: grouped.get(p.id)! }));
+    .map(p => ({ name: p.name, avatarConfig: p.avatarConfig, sessions: grouped.get(p.id)! }));
 
   const ungrouped = grouped.get(null) ?? [];
 
@@ -126,6 +131,7 @@ export const PersonaSidebar = ({
               <PersonaGroup
                 key={group.name}
                 name={group.name}
+                avatarConfig={group.avatarConfig}
                 sessions={group.sessions}
                 selectedSessionId={selectedSessionId}
                 onSelectSession={onSelectSession}
@@ -134,6 +140,7 @@ export const PersonaSidebar = ({
             {ungrouped.length > 0 && (
               <PersonaGroup
                 name="Default Persona"
+                avatarConfig={DEFAULT_AVATAR_CONFIG}
                 sessions={ungrouped}
                 selectedSessionId={selectedSessionId}
                 onSelectSession={onSelectSession}
