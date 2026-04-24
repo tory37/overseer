@@ -6,11 +6,29 @@ export const getBaseUrl = () => {
   return '';
 };
 
+export interface AvatarConfig {
+  eyes: string;
+  mouth: string;
+  hair: string;
+  skinColor: string;
+  hairColor: string;
+  backgroundColor: string;
+}
+
+export const DEFAULT_AVATAR_CONFIG: AvatarConfig = {
+  eyes: 'variant01',
+  mouth: 'variant04',
+  hair: 'short01',
+  skinColor: 'fcd5b0',
+  hairColor: '6b3a2a',
+  backgroundColor: '1e293b',
+};
+
 export interface Persona {
   id: string;
   name: string;
   instructions: string;
-  avatarId: string; // Assuming an avatar ID is a string for now
+  avatarConfig: AvatarConfig;
 }
 
 export interface Session {
