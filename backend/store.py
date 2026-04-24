@@ -6,6 +6,12 @@ from pydantic import BaseModel
 
 CONFIG_PATH = Path.home() / ".overseer.json"
 
+BUILTIN_AVATAR_CONFIGS = {
+    "senior": {"eyes": "variant09", "mouth": "variant14", "hair": "short01", "skinColor": "f5cba7", "hairColor": "6b6b6b", "backgroundColor": "1e293b"},
+    "intern": {"eyes": "variant01", "mouth": "variant04", "hair": "short02", "skinColor": "fcd5b0", "hairColor": "8b4513", "backgroundColor": "0f172a"},
+    "cyberpunk": {"eyes": "variant06", "mouth": "variant09", "hair": "mohawk01", "skinColor": "d4a574", "hairColor": "00ff88", "backgroundColor": "0a0a0f"},
+}
+
 class Repo(BaseModel):
     id: str
     name: str
@@ -75,7 +81,15 @@ class Store:
         try:
             with open(CONFIG_PATH, "r") as f:
                 data = json.load(f)
-                return Config(**data)
+            # Migrate old avatarId format to avatarConfig
+            if "personas" in data:
+                for persona in data["personas"]:
+                    if "avatarId" in persona:
+                        if "avatarConfig" not in persona:
+                            builtin = BUILTIN_AVATAR_CONFIGS.get(persona["id"])
+                            persona["avatarConfig"] = builtin if builtin else {}
+                        del persona["avatarId"]
+            return Config(**data)
         except Exception as e:
             print(f"Error loading config: {e}")
             return Config()

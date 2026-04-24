@@ -9,25 +9,37 @@ def test_get_personas():
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    # Default personas should be there
     assert len(data) >= 3
     persona_ids = [p["id"] for p in data]
     assert "senior" in persona_ids
     assert "intern" in persona_ids
     assert "cyberpunk" in persona_ids
+    senior = next(p for p in data if p["id"] == "senior")
+    assert "avatarConfig" in senior
+    assert senior["avatarConfig"]["eyes"] == "variant09"
 
 def test_create_persona():
     new_persona = {
         "id": "test-bot",
         "name": "Test Bot",
         "instructions": "Be a bot for testing.",
-        "avatarId": "bot-1"
+        "avatarConfig": {
+            "eyes": "variant01",
+            "mouth": "variant04",
+            "hair": "short01",
+            "skinColor": "fcd5b0",
+            "hairColor": "6b3a2a",
+            "backgroundColor": "1e293b"
+        }
     }
+    from backend.main import store
+    store.config.personas = [p for p in store.config.personas if p.id != "test-bot"]
     response = client.post("/api/personas", json=new_persona)
     assert response.status_code == 200
-    assert response.json() == new_persona
+    data = response.json()
+    assert data["id"] == "test-bot"
+    assert data["avatarConfig"]["eyes"] == "variant01"
 
-    # Verify it was added
     response = client.get("/api/personas")
     assert response.status_code == 200
     persona_ids = [p["id"] for p in response.json()]
@@ -45,10 +57,10 @@ def test_create_session_with_persona_id(mock_create_session):
         id=persona_id,
         name="Test Session Persona",
         instructions="Instructions for session.",
-        avatarId="session-1"
     )
     # Use the actual store instance from main.py
     from backend.main import store
+    store.config.personas = [p for p in store.config.personas if p.id != persona_id]
     store.add_persona(test_persona)
 
     new_session_request = {
