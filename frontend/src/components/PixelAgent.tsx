@@ -62,7 +62,7 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({ messages, isWorking, ava
         <div className="flex items-center space-x-3">
           <div className="relative">
             <AgentAvatar avatarConfig={avatarConfig} state={avatarState} talkingUntil={talkingUntil} size={40} />
-            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-952 ${isWorking ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-950 ${isWorking ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-200">{personaName || 'Overseer'}</h3>
