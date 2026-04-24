@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getPersonas, createPersona, updatePersona, deletePersona, Persona } from '../utils/api';
+import type { Persona } from '../utils/api';
+import { getPersonas, createPersona, updatePersona, deletePersona } from '../utils/api';
 import { Plus, Search, Save, Trash2, X, Edit, Ghost } from 'lucide-react';
 
 const PersonaStudio: React.FC = () => {
@@ -236,7 +237,7 @@ const PersonaStudio: React.FC = () => {
 
 
     return (
-        <div className="flex h-screen bg-slate-900 text-slate-300 font-sans">
+        <div className="flex h-full w-full bg-slate-900 text-slate-300 font-sans">
             <Sidebar />
             <Editor />
         </div>

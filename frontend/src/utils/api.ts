@@ -71,3 +71,28 @@ export const getSessions = async (): Promise<Session[]> => {
   }
   return response.json();
 };
+
+export const updatePersona = async (id: string, persona: Partial<Persona>): Promise<Persona> => {
+  const response = await fetch(`${getBaseUrl()}/api/personas/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(persona),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || `Error updating persona: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+export const deletePersona = async (id: string): Promise<void> => {
+  const response = await fetch(`${getBaseUrl()}/api/personas/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || `Error deleting persona: ${response.statusText}`);
+  }
+};

@@ -20,7 +20,7 @@ interface Group {
 interface SidebarProps {
   onSelectRepo: (repo: Repo) => void
   onNewSession: () => void
-  onOpenSpecialTab: (type: 'agent' | 'persona-lab' | 'config' | 'search') => void
+  onOpenSpecialTab: (type: 'persona-studio' | 'config' | 'search') => void
 }
 
 export const Sidebar = ({ onSelectRepo, onNewSession, onOpenSpecialTab }: SidebarProps) => {
@@ -152,11 +152,11 @@ export const Sidebar = ({ onSelectRepo, onNewSession, onOpenSpecialTab }: Sideba
       {/* Footer Actions */}
       <div className="p-3 border-t border-slate-800/60 bg-slate-950/40 space-y-1">
         <button 
-          onClick={() => onOpenSpecialTab('persona-lab')}
+          onClick={() => onOpenSpecialTab('persona-studio')}
           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-slate-800 text-sm text-slate-400 hover:text-slate-200 transition-colors"
         >
           <Ghost className="w-4 h-4" />
-          <span>Persona Studio</span>
+          <span>Persona Lab</span>
         </button>
         <button 
           onClick={() => onOpenSpecialTab('search')}

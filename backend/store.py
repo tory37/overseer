@@ -26,7 +26,8 @@ class Group(BaseModel):
 class SessionTab(BaseModel):
     id: str
     name: str
-    cwd: str
+    type: str = "agent"
+    cwd: Optional[str] = None
     command: Optional[str] = None
     personaId: Optional[str] = None
     active: bool = False

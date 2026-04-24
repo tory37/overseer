@@ -11,7 +11,8 @@ interface UtilityPaneProps {
 }
 
 export const UtilityPane = ({ id, cwd, onVoiceMessage, onActivity }: UtilityPaneProps) => {
-  const [mode, setMode] = useState<'SHELL' | 'GIT' | 'INSPECTOR'>('GIT')
+  type UtilityMode = 'SHELL' | 'GIT' | 'INSPECTOR';
+  const [mode, setMode] = useState<UtilityMode>('GIT')
   const [gitStatus, setGitStatus] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const utilitySessionId = `utility-${id}`
@@ -43,13 +44,13 @@ export const UtilityPane = ({ id, cwd, onVoiceMessage, onActivity }: UtilityPane
       {/* Mode Switcher */}
       <div className="flex bg-slate-950/80 border-b border-slate-800/60 p-1 gap-1">
         {[
-          { id: 'GIT', icon: GitBranch, label: 'Git' },
-          { id: 'INSPECTOR', icon: Info, label: 'Inspector' },
-          { id: 'SHELL', icon: Shell, label: 'Shell' },
+          { id: 'GIT' as UtilityMode, icon: GitBranch, label: 'Git' },
+          { id: 'INSPECTOR' as UtilityMode, icon: Info, label: 'Inspector' },
+          { id: 'SHELL' as UtilityMode, icon: Shell, label: 'Shell' },
         ].map((item) => (
           <button
             key={item.id}
-            onClick={() => setMode(item.id as any)}
+            onClick={() => setMode(item.id)}
             className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
               mode === item.id 
                 ? 'bg-blue-600/10 text-blue-400 shadow-[inset_0_0_10px_rgba(59,130,246,0.1)]' 

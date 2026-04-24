@@ -1,8 +1,9 @@
+import { useState, useEffect } from 'react'
 import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost, Settings, Search, Rocket, Check, GitBranch, Info, Plus, Trash2, Folder, Home } from 'lucide-react'
 import { Sidebar } from './components/Sidebar'
 import { TabContainer } from './components/TabContainer'
 import { NewSessionOverlay } from './components/NewSessionOverlay'
-import { PersonaStudio } from './components/PersonaStudio'
+import PersonaStudio from './components/PersonaStudio'
 import { getBaseUrl, createSession, type Persona, getPersonas } from './utils/api'
 
 interface Repo {
@@ -12,7 +13,7 @@ interface Repo {
   group_id?: string
 }
 
-type TabType = 'agent' | 'persona-lab' | 'config' | 'search';
+type TabType = 'agent' | 'persona-studio' | 'config' | 'search';
 
 interface Tab {
   id: string;
@@ -104,7 +105,7 @@ function App() {
       return
     }
 
-    const name = type === 'persona-lab' ? 'Persona Studio' : 
+    const name = type === 'persona-studio' ? 'Persona Studio' : 
                  type === 'config' ? 'Configuration' : 
                  type === 'search' ? 'Global Search' : type
     
@@ -187,7 +188,7 @@ function App() {
                   : 'text-slate-500 hover:bg-slate-800/40 hover:text-slate-300'
               }`}
             >
-              {tab.type === 'persona-lab' ? (
+              {tab.type === 'persona-studio' ? (
                 <Ghost className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
               ) : tab.type === 'config' ? (
                 <Settings className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
@@ -233,7 +234,7 @@ function App() {
             />
           ) : activeTab ? (
             <>
-              {activeTab.type === 'persona-lab' && (
+              {activeTab.type === 'persona-studio' && (
                 <PersonaStudio />
               )}
               {activeTab.type === 'agent' && (
