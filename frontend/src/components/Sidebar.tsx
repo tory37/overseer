@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Folder, Search, Settings, Plus, GitBranch, Terminal, Check } from 'lucide-react'
+import { Folder, Search, Settings, Plus, GitBranch, Terminal, Check, UserCircle } from 'lucide-react'
 import { getBaseUrl } from '../utils/api'
 import Modal from './Modal' // Import the new Modal component
 import FileBrowser from './FileBrowser' // Import the new FileBrowser component
@@ -20,9 +20,10 @@ interface Group {
 interface SidebarProps {
   onSelectRepo: (repo: Repo) => void
   onNewSession: () => void
+  onOpenSpecialTab: (type: 'agent' | 'persona-lab' | 'config' | 'search') => void
 }
 
-export const Sidebar = ({ onSelectRepo, onNewSession }: SidebarProps) => {
+export const Sidebar = ({ onSelectRepo, onNewSession, onOpenSpecialTab }: SidebarProps) => {
   const [repos, setRepos] = useState<Repo[]>([])
   const [groups, setGroups] = useState<Group[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
@@ -150,11 +151,24 @@ export const Sidebar = ({ onSelectRepo, onNewSession }: SidebarProps) => {
 
       {/* Footer Actions */}
       <div className="p-3 border-t border-slate-800/60 bg-slate-950/40 space-y-1">
-        <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-slate-800 text-sm text-slate-400 hover:text-slate-200 transition-colors">
+        <button 
+          onClick={() => onOpenSpecialTab('persona-lab')}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-slate-800 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+        >
+          <UserCircle className="w-4 h-4" />
+          <span>Persona Studio</span>
+        </button>
+        <button 
+          onClick={() => onOpenSpecialTab('search')}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-slate-800 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+        >
           <Search className="w-4 h-4" />
           <span>Global Search</span>
         </button>
-        <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-slate-800 text-sm text-slate-400 hover:text-slate-200 transition-colors">
+        <button 
+          onClick={() => onOpenSpecialTab('config')}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-slate-800 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+        >
           <Settings className="w-4 h-4" />
           <span>Configuration</span>
         </button>
@@ -166,9 +180,8 @@ export const Sidebar = ({ onSelectRepo, onNewSession }: SidebarProps) => {
         onClose={() => setShowAddModal(false)}
         title="Add New Repository"
       >
-        {/* Main content div for the modal - now a flex container */}
         <div className="flex flex-col flex-grow h-full overflow-hidden">
-          <div className="space-y-2 mb-4 flex-shrink-0"> {/* Display Name input - flex-shrink-0 to not shrink */}
+          <div className="space-y-2 mb-4 flex-shrink-0">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Display Name</label>
             <input
               autoFocus
@@ -180,13 +193,12 @@ export const Sidebar = ({ onSelectRepo, onNewSession }: SidebarProps) => {
           </div>
 
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1 mb-2 flex-shrink-0">Select the root directory of your Git repository:</p>
-          {/* FileBrowser container - now takes remaining space */}
           <div className="flex-grow min-h-0 mb-4 border border-slate-700 rounded-lg overflow-hidden">
             <FileBrowser onSelectPath={(path) => setNewRepo(prev => ({ ...prev, path }))} initialPath={newRepo.path || '/'} />
           </div>
           <p className="text-sm font-medium text-slate-400 mb-4 flex-shrink-0">Selected path: <strong>{newRepo.path || 'None'}</strong></p>
 
-          <div className="pt-4 flex gap-4 flex-shrink-0"> {/* Buttons - flex-shrink-0 to not shrink */}
+          <div className="pt-4 flex gap-4 flex-shrink-0">
             <button
               onClick={() => setShowAddModal(false)}
               className="flex-1 px-6 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-sm font-bold text-slate-400 transition-all active:scale-95"

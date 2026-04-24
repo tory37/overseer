@@ -3,6 +3,7 @@ import { Terminal as TerminalIcon, X, Layout, Maximize2, Ghost, Rocket, Check, G
 import { Sidebar } from './components/Sidebar'
 import { TabContainer } from './components/TabContainer'
 import { NewSessionOverlay } from './components/NewSessionOverlay'
+import { PersonaLab } from './components/PersonaLab'
 import { getBaseUrl, createSession, type Persona, getPersonas } from './utils/api'
 
 interface Repo {
@@ -12,13 +13,16 @@ interface Repo {
   group_id?: string
 }
 
+type TabType = 'agent' | 'persona-lab' | 'config' | 'search';
+
 interface Tab {
-  id: string
-  name: string
-  cwd: string
-  command?: string
-  personaId?: string | null
-  active: boolean
+  id: string;
+  type: TabType;
+  name: string;
+  cwd?: string;
+  command?: string;
+  personaId?: string | null;
+  active: boolean;
 }
 
 
@@ -38,7 +42,12 @@ function App() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
-          setTabs(data)
+          // Ensure all tabs have a type, defaulting to 'agent' for migration
+          const validatedTabs = data.map((t: Tab) => ({
+            ...t,
+            type: t.type || 'agent'
+          }))
+          setTabs(validatedTabs)
         }
         setIsLoaded(true)
       })
@@ -76,17 +85,38 @@ function App() {
       const session = await createSession(name, path, command || '', personaId, 30, 120);
       const id = session.id;
       const newTabs = tabs.map(t => ({ ...t, active: false }))
-      setTabs([...newTabs, { id, name, cwd: path, command, personaId, active: true }])
+      setTabs([...newTabs, { id, type: 'agent', name, cwd: path, command, personaId, active: true }])
       setIsCreatingSession(false)
       setIsLoaded(true)
     } catch (err) {
       console.error("Failed to create session:", err);
       const id = Math.random().toString(36).substring(7)
       const newTabs = tabs.map(t => ({ ...t, active: false }))
-      setTabs([...newTabs, { id, name, cwd: path, command, personaId, active: true }])
+      setTabs([...newTabs, { id, type: 'agent', name, cwd: path, command, personaId, active: true }])
       setIsCreatingSession(false)
       setIsLoaded(true)
     }
+  }
+
+  const openSpecialTab = (type: TabType) => {
+    const existing = tabs.find(t => t.type === type)
+    if (existing) {
+      setActive(existing.id)
+      return
+    }
+
+    const name = type === 'persona-lab' ? 'Persona Studio' : 
+                 type === 'config' ? 'Configuration' : 
+                 type === 'search' ? 'Global Search' : type
+    
+    const id = `special-${type}`
+    const newTabs = tabs.map(t => ({ ...t, active: false }))
+    setTabs([...newTabs, { 
+      id, 
+      type, 
+      name, 
+      active: true 
+    }])
   }
 
   const handleStartTask = async (e: React.FormEvent) => {
@@ -141,6 +171,7 @@ function App() {
           setTabs(tabs.map(t => ({ ...t, active: false })))
         }} 
         onNewSession={() => setIsCreatingSession(true)}
+        onOpenSpecialTab={openSpecialTab}
       />
 
       {/* Main Area */}
@@ -157,7 +188,15 @@ function App() {
                   : 'text-slate-500 hover:bg-slate-800/40 hover:text-slate-300'
               }`}
             >
-              <TerminalIcon className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
+              {tab.type === 'persona-lab' ? (
+                <Ghost className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
+              ) : tab.type === 'config' ? (
+                <Maximize2 className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
+              ) : tab.type === 'search' ? (
+                <Layout className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
+              ) : (
+                <TerminalIcon className={`w-3.5 h-3.5 ${tab.active ? 'text-blue-500' : 'text-slate-600 group-hover:text-slate-400'}`} />
+              )}
               <span className="truncate flex-1">{tab.name}</span>
               <button 
                 onClick={(e) => closeTab(tab.id, e)}
@@ -194,15 +233,21 @@ function App() {
               onLaunch={(name, path, command, personaId) => openTab(name, path, command, personaId)}
             />
           ) : activeTab ? (
-            <TabContainer 
-              key={activeTab.id} 
-              id={activeTab.id} 
-              cwd={activeTab.cwd} 
-              command={activeTab.command} 
-              personaId={activeTab.personaId} 
-              personas={personas}
-              onPersonaCreated={() => getPersonas().then(setPersonas)}
-            />
+            activeTab.type === 'persona-lab' ? (
+              <div className="flex-1 overflow-y-auto bg-slate-950">
+                <PersonaLab onCreated={() => getPersonas().then(setPersonas)} />
+              </div>
+            ) : (
+              <TabContainer 
+                key={activeTab.id} 
+                id={activeTab.id} 
+                cwd={activeTab.cwd} 
+                command={activeTab.command} 
+                personaId={activeTab.personaId} 
+                personas={personas}
+                onPersonaCreated={() => getPersonas().then(setPersonas)}
+              />
+            )
           ) : selectedRepo ? (
             <div className="flex-1 flex flex-col p-12 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center justify-between mb-12">
