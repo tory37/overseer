@@ -12,11 +12,19 @@ class Repo(BaseModel):
     path: str
     group_id: Optional[str] = None
 
+class AvatarConfig(BaseModel):
+    eyes: str = "variant01"
+    mouth: str = "variant04"
+    hair: str = "short01"
+    skinColor: str = "fcd5b0"
+    hairColor: str = "6b3a2a"
+    backgroundColor: str = "1e293b"
+
 class Persona(BaseModel):
     id: str
     name: str
     instructions: str
-    avatarId: str
+    avatarConfig: AvatarConfig = AvatarConfig()
 
 class Group(BaseModel):
     id: str
@@ -37,9 +45,24 @@ class Config(BaseModel):
     groups: List[Group] = []
     sessions: List[SessionTab] = []
     personas: List[Persona] = [
-        Persona(id="senior", name="The Senior", instructions="You are a grumpy senior engineer. Be brief, cynical, and obsessed with DRY and clean code.", avatarId="senior-1"),
-        Persona(id="intern", name="The Intern", instructions="You are an over-eager intern. Use lots of emojis and be very enthusiastic about learning.", avatarId="intern-1"),
-        Persona(id="cyberpunk", name="The Cyber-Punk", instructions="You are a cynical netrunner. Use glitchy metaphors and treat coding like a battlefield.", avatarId="cyber-1")
+        Persona(
+            id="senior",
+            name="The Senior",
+            instructions="You are a grumpy senior engineer. Be brief, cynical, and obsessed with DRY and clean code.",
+            avatarConfig=AvatarConfig(eyes="variant09", mouth="variant14", hair="short01", skinColor="f5cba7", hairColor="6b6b6b", backgroundColor="1e293b"),
+        ),
+        Persona(
+            id="intern",
+            name="The Intern",
+            instructions="You are an over-eager intern. Use lots of emojis and be very enthusiastic about learning.",
+            avatarConfig=AvatarConfig(eyes="variant01", mouth="variant04", hair="short02", skinColor="fcd5b0", hairColor="8b4513", backgroundColor="0f172a"),
+        ),
+        Persona(
+            id="cyberpunk",
+            name="The Cyber-Punk",
+            instructions="You are a cynical netrunner. Use glitchy metaphors and treat coding like a battlefield.",
+            avatarConfig=AvatarConfig(eyes="variant06", mouth="variant09", hair="mohawk01", skinColor="d4a574", hairColor="00ff88", backgroundColor="0a0a0f"),
+        ),
     ]
 
 class Store:
