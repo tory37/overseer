@@ -25,6 +25,7 @@ class Session:
         self.last_accessed = time.time()
         self.queues: Set[asyncio.Queue] = set()
         self._read_task: Optional[asyncio.Task] = None
+        self.lock = asyncio.Lock()
 
     def start_reading(self):
         if self._read_task is None:
@@ -34,21 +35,25 @@ class Session:
         logger.info(f"Session {self.session_id} _read_loop started.")
         try:
             while self.pty.is_alive():
-                # read() in PtyManager already updates its internal buffer
-                data = await asyncio.to_thread(self.pty.read)
+                # Use read_raw to avoid updating buffer outside our lock
+                data = await asyncio.to_thread(self.pty.read_raw)
                 if data:
-                    logger.debug(f"Session {self.session_id} read {len(data)} bytes from PTY.")
-                    # Broadcast to all connected clients
-                    disconnected_queues = []
-                    for q in self.queues:
-                        try:
-                            q.put_nowait(data)
-                        except asyncio.QueueFull:
-                            logger.warning(f"Session {self.session_id} queue full for one client, dropping data.")
-                            disconnected_queues.append(q)
-                    
-                    for q in disconnected_queues:
-                        self.queues.discard(q)
+                    async with self.lock:
+                        logger.debug(f"Session {self.session_id} read {len(data)} bytes from PTY.")
+                        # Atomic update: buffer + broadcast
+                        self.pty.append_to_buffer(data)
+                        
+                        # Broadcast to all connected clients
+                        disconnected_queues = []
+                        for q in self.queues:
+                            try:
+                                q.put_nowait(data)
+                            except asyncio.QueueFull:
+                                logger.warning(f"Session {self.session_id} queue full for one client, dropping data.")
+                                disconnected_queues.append(q)
+                        
+                        for q in disconnected_queues:
+                            self.queues.discard(q)
                 else:
                     # Data is empty, check if PTY is still alive
                     if not self.pty.is_alive():
@@ -66,11 +71,13 @@ class Session:
             logger.info(f"Session {self.session_id} _read_loop exiting.")
             self._read_task = None
 
-    def subscribe(self) -> asyncio.Queue:
-        q = asyncio.Queue()
-        self.queues.add(q)
-        self.last_accessed = time.time()
-        return q
+    async def subscribe(self) -> tuple[bytes, asyncio.Queue]:
+        async with self.lock:
+            buffer = self.pty.get_buffer()
+            q = asyncio.Queue()
+            self.queues.add(q)
+            self.last_accessed = time.time()
+            return buffer, q
 
     def unsubscribe(self, q: asyncio.Queue):
         self.queues.discard(q)
@@ -96,18 +103,23 @@ class SessionManager:
         session.start_reading()
         self._sessions[session_id] = session
 
-    async def create_session(self, name: str, cwd: str, persona: Optional[Persona] = None, command: Optional[str] = None, session_id: Optional[str] = None):
+    async def create_session(self, name: str, cwd: str, persona: Optional[Persona] = None, command: Optional[str] = None, session_id: Optional[str] = None, rows: int = 24, cols: int = 80):
         if session_id is None:
             session_id = str(uuid.uuid4())
         env = os.environ.copy()
         if persona:
             instructions = (
                 f"You are {persona.name}. {persona.instructions} "
-                "You MUST wrap all non-technical conversational chatter in <voice> tags. "
-                "Do not wrap code, commands, or technical output in these tags."
+                "CRITICAL: ALL conversational speech, greetings, 'flair', personality interjections, or explanations MUST be wrapped in <voice> tags. "
+                "The ONLY things that should be OUTSIDE of <voice> tags are raw terminal commands, code, file paths, tree structures, or command logs. "
+                "Examples: "
+                "- '<voice>Hello! I am ready to help.</voice>' "
+                "- '<voice>I will now search the codebase for that bug.</voice>' "
+                "- 'grep -r \"bug\" src/' "
+                "- '<voice>Found it! It was in the parser.</voice>' "
+                "NEVER send plain text greetings or explanations without <voice> tags. If you are speaking to the user, use <voice>."
             )
             # Gemini CLI expects GEMINI_SYSTEM_MD to point to a file path, not the text directly.
-            # We'll write to a temporary file.
             temp_path = f"/tmp/overseer_persona_{session_id}.md"
             try:
                 with open(temp_path, "w") as f:
@@ -118,7 +130,7 @@ class SessionManager:
                 logger.error(f"Failed to create temporary persona file: {e}")
             
         # Use command if provided, otherwise default to interactive shell
-        pty = PtyManager(cwd=cwd, env=env, command=command)
+        pty = PtyManager(cwd=cwd, env=env, command=command, rows=rows, cols=cols)
         pty.start()
         
         metadata = SessionMetadata(

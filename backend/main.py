@@ -25,6 +25,8 @@ class NewSessionRequest(BaseModel):
     cwd: str
     personaId: Optional[str] = None
     command: Optional[str] = None # Added command field
+    rows: Optional[int] = 24
+    cols: Optional[int] = 80
 
 app = FastAPI()
 store = Store()
@@ -58,7 +60,14 @@ async def create_session(request: NewSessionRequest):
         if not persona:
             raise HTTPException(status_code=404, detail=f"Persona with ID '{request.personaId}' not found")
     
-    session_id = await session_manager.create_session(request.name, request.cwd, persona, request.command) # Pass command
+    session_id = await session_manager.create_session(
+        request.name, 
+        request.cwd, 
+        persona, 
+        request.command,
+        rows=request.rows,
+        cols=request.cols
+    ) 
     return {"id": session_id}
 
 @app.get("/api/personas")
@@ -216,10 +225,12 @@ async def terminal_websocket(
     sessionId: str = Query(...),
     cwd: Optional[str] = Query(None),
     command: Optional[str] = Query("/bin/bash"),
-    personaId: Optional[str] = Query(None)
+    personaId: Optional[str] = Query(None),
+    rows: int = Query(24),
+    cols: int = Query(80)
 ):
     await websocket.accept()
-    logger.info(f"Terminal WebSocket connection accepted for session {sessionId}")
+    logger.info(f"Terminal WebSocket connection accepted for session {sessionId} size {rows}x{cols}")
     
     session = session_manager.get_session(sessionId)
     if not session:
@@ -242,7 +253,9 @@ async def terminal_websocket(
                     cwd=cwd,
                     persona=persona,
                     command=command,
-                    session_id=sessionId
+                    session_id=sessionId,
+                    rows=rows,
+                    cols=cols
                 )
                 session = session_manager.get_session(sessionId)
             except Exception as e:
@@ -259,15 +272,20 @@ async def terminal_websocket(
         await websocket.close(code=1011, reason="Failed to initialize session")
         return
 
-    queue = session.subscribe()
+    # Update size if it differs from current
+    if session.pty.rows != rows or session.pty.cols != cols:
+        logger.info(f"Resizing PTY for {sessionId} to {rows}x{cols} from {session.pty.rows}x{session.pty.cols}")
+        session.pty.resize(rows, cols)
+        session.pty.rows = rows
+        session.pty.cols = cols
+
+    # Atomic snapshot of buffer and new queue
+    buffer, queue = await session.subscribe()
     
     # Send existing buffer to the client immediately upon reconnection
     try:
-        buffer = session.pty.get_buffer()
         if buffer:
-            # Attempt to decode as UTF-8, replacing errors
-            text_buffer = buffer.decode('utf-8', errors='replace')
-            await websocket.send_text(text_buffer)
+            await websocket.send_bytes(buffer)
     except Exception as e:
         logger.error(f"Error sending buffer to WS for session {sessionId}: {e}")
 
@@ -277,9 +295,7 @@ async def terminal_websocket(
                 data = await queue.get()
                 if data:
                     try:
-                        # Attempt to decode as UTF-8, replacing errors to avoid crashes
-                        text_data = data.decode('utf-8', errors='replace')
-                        await websocket.send_text(text_data)
+                        await websocket.send_bytes(data)
                     except Exception as e:
                         logger.error(f"Error sending data to WS for session {sessionId}: {e}")
                 queue.task_done()
@@ -303,6 +319,8 @@ async def terminal_websocket(
                         rows = msg.get("rows")
                         if cols and rows:
                             session.pty.resize(rows, cols)
+                            session.pty.rows = rows
+                            session.pty.cols = cols
                 except json.JSONDecodeError:
                     if message and session.pty.is_alive():
                         session.pty.write(message)

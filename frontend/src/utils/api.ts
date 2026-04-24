@@ -32,13 +32,15 @@ export const createSession = async (
   cwd: string,
   command: string,
   personaId: string | null,
+  rows?: number,
+  cols?: number,
 ): Promise<Session> => {
   const response = await fetch(`${getBaseUrl()}/api/sessions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ name, cwd, command, personaId }),
+    body: JSON.stringify({ name, cwd, command, personaId, rows, cols }),
   });
   if (!response.ok) {
     throw new Error(`Error creating session: ${response.statusText}`);

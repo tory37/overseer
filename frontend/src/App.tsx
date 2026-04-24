@@ -73,7 +73,7 @@ function App() {
 
   const openTab = async (name: string, path: string, command?: string, personaId: string | null = null) => {
     try {
-      const session = await createSession(name, path, command || '', personaId);
+      const session = await createSession(name, path, command || '', personaId, 30, 120);
       const id = session.id;
       const newTabs = tabs.map(t => ({ ...t, active: false }))
       setTabs([...newTabs, { id, name, cwd: path, command, personaId, active: true }])

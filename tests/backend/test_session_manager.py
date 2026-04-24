@@ -62,7 +62,7 @@ async def test_session_subscription():
     sm.register("sub-test", pty)
     session = sm.get_session("sub-test")
     
-    queue = session.subscribe()
+    buffer, queue = await session.subscribe()
     
     # Wait for data from pty
     found = False

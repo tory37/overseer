@@ -8,7 +8,7 @@ from ptyprocess import PtyProcess
 logger = logging.getLogger(__name__)
 
 class PtyManager:
-    def __init__(self, command: str = None, cwd: str = None, env: dict = None, use_shell: bool = True):
+    def __init__(self, command: str = None, cwd: str = None, env: dict = None, use_shell: bool = True, rows: int = 24, cols: int = 80):
         # Detect default shell
         shell_executable = shutil.which(os.environ.get("SHELL", "bash")) or "/bin/bash"
         
@@ -31,11 +31,13 @@ class PtyManager:
         self.command = args
         self.cwd = cwd or os.getcwd()
         self.env = env
+        self.rows = rows
+        self.cols = cols
         self.process = None
         self.buffer = deque(maxlen=50)
 
     def start(self):
-        logger.info(f"PtyManager: Starting command: {self.command}, in cwd: {self.cwd}")
+        logger.info(f"PtyManager: Starting command: {self.command}, in cwd: {self.cwd}, size: {self.rows}x{self.cols}")
         if self.env:
             path = self.env.get("PATH", "not set")
             logger.debug(f"PtyManager: PATH in environment: {path}")
@@ -43,7 +45,7 @@ class PtyManager:
             logger.debug(f"PtyManager: environment not set, using default.")
         
         try:
-            self.process = PtyProcess.spawn(self.command, cwd=self.cwd, env=self.env)
+            self.process = PtyProcess.spawn(self.command, cwd=self.cwd, env=self.env, dimensions=(self.rows, self.cols))
             logger.info(f"PtyManager: Process spawned with PID: {self.process.pid}")
             
             # Short check to see if it died immediately
@@ -62,7 +64,6 @@ class PtyManager:
             data = self.process.read(max_bytes)
             if data:
                 self.buffer.append(data)
-                # logger.debug(f"PtyManager: Read {len(data)} bytes")
             return data
         except EOFError:
             logger.info(f"PtyManager: EOFError received from process {getattr(self.process, 'pid', 'unknown')}. Process likely terminated.")
@@ -70,6 +71,20 @@ class PtyManager:
         except Exception as e:
             logger.error(f"PtyManager: Error reading from process: {e}")
             return b""
+
+    def read_raw(self, max_bytes: int = 1024) -> bytes:
+        """Read from the process without updating the internal buffer."""
+        if not self.process:
+            return b""
+        try:
+            return self.process.read(max_bytes)
+        except (EOFError, Exception):
+            return b""
+
+    def append_to_buffer(self, data: bytes):
+        """Manually append data to the internal buffer."""
+        if data:
+            self.buffer.append(data)
 
     def get_buffer(self) -> bytes:
         return b"".join(self.buffer)

@@ -8,10 +8,11 @@ interface UtilityPaneProps {
   id: string
   cwd?: string
   onVoiceMessage?: (message: string) => void
+  onActivity?: (isWorking: boolean) => void
   onPersonaCreated?: () => void
 }
 
-export const UtilityPane = ({ id, cwd, onVoiceMessage, onPersonaCreated }: UtilityPaneProps) => {
+export const UtilityPane = ({ id, cwd, onVoiceMessage, onActivity, onPersonaCreated }: UtilityPaneProps) => {
   const [mode, setMode] = useState<'SHELL' | 'GIT' | 'INSPECTOR' | 'PERSONA_LAB'>('GIT')
   const [gitStatus, setGitStatus] = useState<string>('')
   const [loading, setLoading] = useState(false)
@@ -145,6 +146,7 @@ export const UtilityPane = ({ id, cwd, onVoiceMessage, onPersonaCreated }: Utili
                 cwd={cwd} 
                 command="/bin/bash" 
                 onVoiceMessage={onVoiceMessage}
+                onActivity={onActivity}
               />
             </div>
             <div className="bg-slate-950 border-t border-slate-800 p-2 flex items-center justify-between text-[10px] text-slate-500 font-mono">
