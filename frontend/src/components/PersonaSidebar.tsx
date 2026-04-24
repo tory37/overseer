@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 
+export const SessionItem = ({ title, isActive }: { title: string; isActive: boolean }) => (
+  <div className={`cursor-pointer px-2 py-1 rounded ${isActive ? 'bg-blue-900 text-blue-100' : 'hover:bg-gray-800 text-gray-400'}`}>
+    {title}
+  </div>
+);
+
 const PersonaGroup = ({ name }: { name: string }) => {
   const [expanded, setExpanded] = useState(true);
   return (
@@ -10,7 +16,12 @@ const PersonaGroup = ({ name }: { name: string }) => {
       >
         <span className="mr-1">{expanded ? '▼' : '▶'}</span> {name}
       </button>
-      {expanded && <div className="pl-4 mt-1 space-y-1 text-gray-500 cursor-pointer hover:text-gray-300">Session 1</div>}
+      {expanded && (
+        <div className="pl-4 mt-1 space-y-1">
+          <SessionItem title="Analysis Session" isActive={true} />
+          <SessionItem title="Setup Session" isActive={false} />
+        </div>
+      )}
     </div>
   );
 };
