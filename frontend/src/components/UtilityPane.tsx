@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Shell, GitBranch, Info, Activity, RefreshCw, Ghost } from 'lucide-react'
+import { Shell, GitBranch, Info, Activity, RefreshCw } from 'lucide-react'
 import { getBaseUrl } from '../utils/api'
-import { PersonaLab } from './PersonaLab'
 import { Terminal } from './Terminal'
 
 interface UtilityPaneProps {
@@ -9,11 +8,10 @@ interface UtilityPaneProps {
   cwd?: string
   onVoiceMessage?: (message: string) => void
   onActivity?: (isWorking: boolean) => void
-  onPersonaCreated?: () => void
 }
 
-export const UtilityPane = ({ id, cwd, onVoiceMessage, onActivity, onPersonaCreated }: UtilityPaneProps) => {
-  const [mode, setMode] = useState<'SHELL' | 'GIT' | 'INSPECTOR' | 'PERSONA_LAB'>('GIT')
+export const UtilityPane = ({ id, cwd, onVoiceMessage, onActivity }: UtilityPaneProps) => {
+  const [mode, setMode] = useState<'SHELL' | 'GIT' | 'INSPECTOR'>('GIT')
   const [gitStatus, setGitStatus] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const utilitySessionId = `utility-${id}`
@@ -48,7 +46,6 @@ export const UtilityPane = ({ id, cwd, onVoiceMessage, onActivity, onPersonaCrea
           { id: 'GIT', icon: GitBranch, label: 'Git' },
           { id: 'INSPECTOR', icon: Info, label: 'Inspector' },
           { id: 'SHELL', icon: Shell, label: 'Shell' },
-          { id: 'PERSONA_LAB', icon: Ghost, label: 'Persona Lab' }, // Added Persona Lab
         ].map((item) => (
           <button
             key={item.id}
@@ -160,8 +157,6 @@ export const UtilityPane = ({ id, cwd, onVoiceMessage, onActivity, onPersonaCrea
             </div>
           </div>
         )}
-
-        {mode === 'PERSONA_LAB' && <PersonaLab onCreated={onPersonaCreated} />}
       </div>
     </div>
   )
