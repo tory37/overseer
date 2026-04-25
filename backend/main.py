@@ -25,9 +25,19 @@ class NewSessionRequest(BaseModel):
     name: str
     cwd: str
     personaId: Optional[str] = None
+    selectedSkills: Optional[List[str]] = []
     command: Optional[str] = None # Added command field
     rows: Optional[int] = 24
     cols: Optional[int] = 80
+
+class SkillsDirectoryRequest(BaseModel):
+    path: str
+
+class SkillUpdate(BaseModel):
+    name: str
+    content: str
+    description: Optional[str] = None
+    category: Optional[str] = None
 
 app = FastAPI()
 store = Store()
@@ -60,6 +70,100 @@ async def health():
 async def get_config():
     return store.get_all()
 
+@app.post("/api/config/skills-directory")
+async def set_skills_directory(request: SkillsDirectoryRequest):
+    store.set_skills_directory(request.path)
+    return {"status": "ok"}
+
+@app.get("/api/skills")
+async def list_skills():
+    skills_dir = store.config.skills_directory
+    if not skills_dir:
+        return []
+    
+    abs_skills_dir = os.path.abspath(os.path.expanduser(skills_dir))
+    if not os.path.exists(abs_skills_dir):
+        return []
+    
+    skills = []
+    for root, dirs, files in os.walk(abs_skills_dir):
+        if 'node_modules' in dirs:
+            dirs.remove('node_modules')
+        if '.git' in dirs:
+            dirs.remove('.git')
+            
+        for file in files:
+            if file.endswith(".md"):
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, abs_skills_dir)
+                try:
+                    with open(file_path, "r") as f:
+                        content = f.read()
+                    
+                    # Simple frontmatter parsing
+                    name = file.replace(".md", "")
+                    description = ""
+                    category = os.path.dirname(rel_path)
+                    
+                    # If it's SKILL.md, use the folder name as the name
+                    if file == "SKILL.md":
+                        name = os.path.basename(os.path.dirname(file_path)) or name
+
+                    skills.append({
+                        "id": rel_path,
+                        "name": name,
+                        "description": description,
+                        "category": category,
+                        "content": content
+                    })
+                except Exception as e:
+                    logger.error(f"Error reading skill {file_path}: {e}")
+                    
+    return skills
+
+@app.post("/api/skills")
+async def create_skill(skill: SkillUpdate):
+    skills_dir = store.config.skills_directory
+    if not skills_dir:
+        raise HTTPException(status_code=400, detail="Skills directory not configured")
+    
+    # Use category as subfolder if provided
+    target_dir = os.path.abspath(os.path.expanduser(skills_dir))
+    if skill.category:
+        target_dir = os.path.join(target_dir, skill.category)
+    
+    os.makedirs(target_dir, exist_ok=True)
+    
+    file_name = f"{skill.name.lower().replace(' ', '-')}.md"
+    file_path = os.path.join(target_dir, file_name)
+    
+    if os.path.exists(file_path):
+        raise HTTPException(status_code=409, detail="Skill already exists")
+    
+    try:
+        with open(file_path, "w") as f:
+            f.write(skill.content)
+        return {"id": os.path.relpath(file_path, os.path.abspath(os.path.expanduser(skills_dir)))}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/skills/{skill_id:path}")
+async def update_skill(skill_id: str, skill: SkillUpdate):
+    skills_dir = store.config.skills_directory
+    if not skills_dir:
+        raise HTTPException(status_code=400, detail="Skills directory not configured")
+    
+    file_path = os.path.join(os.path.abspath(os.path.expanduser(skills_dir)), skill_id)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Skill not found")
+    
+    try:
+        with open(file_path, "w") as f:
+            f.write(skill.content)
+        return {"status": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/sessions")
 async def get_sessions():
     return store.config.sessions
@@ -77,6 +181,7 @@ async def create_session(request: NewSessionRequest):
         request.cwd, 
         persona, 
         request.command,
+        selected_skills=request.selectedSkills,
         rows=request.rows,
         cols=request.cols
     ) 

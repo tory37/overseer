@@ -4,10 +4,11 @@ import { TabContainer } from './TabContainer';
 import { Configuration } from './Configuration';
 import { Repositories } from './Repositories';
 import PersonaStudio from './PersonaStudio';
+import { SkillLibrary } from './SkillLibrary';
 import type { Persona } from '../utils/api';
 import { Terminal } from 'lucide-react';
 
-export type SpecialView = 'persona-studio' | 'config' | 'search' | 'repositories';
+export type SpecialView = 'persona-studio' | 'config' | 'search' | 'repositories' | 'skill-library';
 
 interface Tab {
   id: string;
@@ -79,6 +80,7 @@ export const PersonaLayout: React.FC<PersonaLayoutProps> = ({
       />
       <main className="flex-1 overflow-hidden flex flex-col">
         {specialView === 'persona-studio' && <PersonaStudio onPersonaChanged={onPersonaCreated} />}
+        {specialView === 'skill-library' && <SkillLibrary />}
         {specialView === 'config' && <Configuration />}
         {specialView === 'repositories' && <Repositories onNewSession={onNewSession} />}
         {specialView === 'search' && (

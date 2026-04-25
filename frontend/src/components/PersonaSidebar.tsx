@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Ghost, Search, Settings, Terminal, Folder, Plus, Trash2 } from 'lucide-react';
+import { Ghost, Search, Settings, Terminal, Folder, Plus, Trash2, Zap } from 'lucide-react';
 import type { Persona } from '../utils/api';
 import type { SpecialView } from './PersonaLayout';
 import { AgentAvatar } from './AgentAvatar';
@@ -188,6 +188,10 @@ export const PersonaSidebar = ({
         <button onClick={() => onOpenSpecialView('persona-studio')} className={footerBtn(specialView === 'persona-studio')}>
           <Ghost className="w-4 h-4" />
           <span>Persona Lab</span>
+        </button>
+        <button onClick={() => onOpenSpecialView('skill-library')} className={footerBtn(specialView === 'skill-library')}>
+          <Zap className="w-4 h-4" />
+          <span>Skill Library</span>
         </button>
         <button onClick={() => onOpenSpecialView('repositories')} className={footerBtn(specialView === 'repositories')}>
           <Folder className="w-4 h-4" />

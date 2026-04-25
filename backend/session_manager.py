@@ -141,6 +141,7 @@ class SessionManager:
         persona: Optional[Persona] = None,
         command: Optional[str] = None,
         session_id: Optional[str] = None,
+        selected_skills: Optional[List[str]] = None,
         rows: int = 24,
         cols: int = 80,
     ):
@@ -148,9 +149,10 @@ class SessionManager:
             session_id = str(uuid.uuid4())
 
         extra_env: dict = {}
+        instructions = ""
         if persona:
-            instructions = (
-                f"Your name is {persona.name}. Your title is {persona.title}. {persona.instructions} "
+            instructions += (
+                f"Your name is {persona.name}. Your title is {persona.title}. {persona.instructions}\n\n"
                 "CRITICAL: ALL conversational speech, greetings, 'flair', personality interjections, or explanations MUST be wrapped in <voice> tags. "
                 "The ONLY things that should be OUTSIDE of <voice> tags are raw terminal commands, code, file paths, tree structures, or command logs. "
                 "Examples: "
@@ -158,14 +160,33 @@ class SessionManager:
                 "- '<voice>I will now search the codebase for that bug.</voice>' "
                 "- 'grep -r \"bug\" src/' "
                 "- '<voice>Found it! It was in the parser.</voice>' "
-                "NEVER send plain text greetings or explanations without <voice> tags. If you are speaking to the user, use <voice>."
+                "NEVER send plain text greetings or explanations without <voice> tags. If you are speaking to the user, use <voice>.\n"
             )
+
+        if selected_skills:
+            from backend.store import Store
+            store = Store()
+            skills_dir = store.config.skills_directory
+            if skills_dir:
+                abs_skills_dir = os.path.abspath(os.path.expanduser(skills_dir))
+                instructions += "\n# Active Skills\n"
+                for skill_id in selected_skills:
+                    skill_path = os.path.join(abs_skills_dir, skill_id)
+                    if os.path.exists(skill_path):
+                        try:
+                            with open(skill_path, "r") as f:
+                                skill_content = f.read()
+                            instructions += f"\n## Skill: {skill_id}\n{skill_content}\n"
+                        except Exception as e:
+                            logger.error(f"Failed to read skill {skill_path}: {e}")
+
+        if instructions:
             temp_path = f"/tmp/overseer_persona_{session_id}.md"
             try:
                 with open(temp_path, "w") as f:
                     f.write(instructions)
                 extra_env["GEMINI_SYSTEM_MD"] = temp_path
-                logger.info(f"Created persona instructions at {temp_path}")
+                logger.info(f"Created synthesized system prompt at {temp_path}")
             except Exception as e:
                 logger.error(f"Failed to create temporary persona file: {e}")
 

@@ -50,10 +50,26 @@ export interface Session {
   // Add other session properties as needed
 }
 
+export interface Skill {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  content: string;
+}
+
 export const getPersonas = async (): Promise<Persona[]> => {
   const response = await fetch(`${getBaseUrl()}/api/personas`);
   if (!response.ok) {
     throw new Error(`Error fetching personas: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+export const getSkills = async (): Promise<Skill[]> => {
+  const response = await fetch(`${getBaseUrl()}/api/skills`);
+  if (!response.ok) {
+    throw new Error(`Error fetching skills: ${response.statusText}`);
   }
   return response.json();
 };
@@ -63,6 +79,7 @@ export const createSession = async (
   cwd: string,
   command: string,
   personaId: string | null,
+  selectedSkills: string[] = [],
   rows?: number,
   cols?: number,
 ): Promise<Session> => {
@@ -71,12 +88,39 @@ export const createSession = async (
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ name, cwd, command, personaId, rows, cols }),
+    body: JSON.stringify({ name, cwd, command, personaId, selectedSkills, rows, cols }),
   });
   if (!response.ok) {
     throw new Error(`Error creating session: ${response.statusText}`);
   }
   return response.json();
+};
+
+export const createSkill = async (skill: Omit<Skill, 'id'>): Promise<{ id: string }> => {
+  const response = await fetch(`${getBaseUrl()}/api/skills`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(skill),
+  });
+  if (!response.ok) {
+    throw new Error(`Error creating skill: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+export const updateSkill = async (id: string, skill: Partial<Skill>): Promise<void> => {
+  const response = await fetch(`${getBaseUrl()}/api/skills/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(skill),
+  });
+  if (!response.ok) {
+    throw new Error(`Error updating skill: ${response.statusText}`);
+  }
 };
 
 // Placeholder for other API calls that might exist

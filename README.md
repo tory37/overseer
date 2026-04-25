@@ -11,7 +11,8 @@ Working with AI agents often leads to "Terminal Sprawl" and constant context swi
 - **Managed Isolation:** Every task automatically spins up in a dedicated `git worktree`. No more `git stash` or manual branch management when switching between agent tasks.
 - **The Command Center:** A purpose-built IDE-like interface with split-panes for your agent's terminal, a raw shell for manual intervention, and real-time project status.
 - **Persistent Sessions:** Sessions survive backend restarts. Pick up exactly where you (or the agent) left off.
-- **Persona Studio (Optional):** Define distinct AI personalities (e.g., "Architect," "Reviewer," "Bug Hunter") with custom avatars and system prompts to specialize your agent workforce.
+- **Skill System:** Decouple agent personality from their technical capabilities. Create a library of reusable technical instructions (e.g., "TDD", "Git Management", "React Expert") and mix-and-match them with any persona.
+- **Persona Studio:** Define distinct AI personalities (e.g., "Architect," "Reviewer," "Bug Hunter") with custom avatars and system prompts to focus on their voice and tone.
 
 ## Getting Started
 
@@ -53,8 +54,13 @@ When you start a new task in Overseer, it doesn't just open a terminal. It creat
 ### 🖥 The Unified Terminal
 Overseer uses `xterm.js` to provide a full-featured terminal experience. The UI is designed to keep the Agent's output front-and-center while providing quick-access tabs for secondary shells and file browsing.
 
+### 🧩 Plugin-Based Skill System
+The Skill System allows you to build a repository of "Technical Skills" as Markdown files. 
+When starting a new session, you can select which skills your agent should have. Overseer automatically synthesizes these skills into the agent's system prompt. 
+Skills can be organized into folders and shared via git, making your agent's technical knowledge portable and version-controlled.
+
 ### 👤 Persona System
-While Overseer is a productivity-first tool, it includes a robust Persona system. You can assign avatars (powered by DiceBear) and custom prompts to different agents, helping you visually distinguish between different concurrent workstreams.
+While Overseer is a productivity-first tool, it includes a robust Persona system. You can assign avatars (powered by DiceBear) and custom prompts to different agents. In the new architecture, Personas handle the "Voice and Tone," while Skills handle the "Technical Expertise."
 
 ## Architecture
 

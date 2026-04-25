@@ -13,7 +13,7 @@ async def cleanup_sessions():
 @pytest.mark.anyio
 async def test_session_manager_registration():
     sm = SessionManager()
-    pty = PtyManager(command="bash")
+    pty = PtyManager(session_id="test-reg", command="bash")
     sm.register("test-reg", pty)
     session = sm.get_session("test-reg")
     assert session is not None
@@ -30,7 +30,7 @@ async def test_session_manager_singleton():
 @pytest.mark.anyio
 async def test_session_manager_prune_stale():
     sm = SessionManager()
-    pty = PtyManager(command="bash")
+    pty = PtyManager(session_id="stale-session", command="bash")
     sm.register("stale-session", pty)
     
     session = sm.get_session("stale-session")
@@ -43,7 +43,7 @@ async def test_session_manager_prune_stale():
 @pytest.mark.anyio
 async def test_session_manager_unregister_stops_pty():
     sm = SessionManager()
-    pty = PtyManager(command="sleep 100")
+    pty = PtyManager(session_id="to-stop", command="sleep 100")
     pty.start()
     assert pty.is_alive()
     sm.register("to-stop", pty)
@@ -57,7 +57,7 @@ async def test_session_subscription():
     sm = SessionManager()
     # Use a command that continuously outputs data until killed
     # This avoids any race where the process finishes before we subscribe
-    pty = PtyManager(command="sh -c 'while true; do echo ready; sleep 0.1; done'", use_shell=False)
+    pty = PtyManager(session_id="sub-test", command="sh -c 'while true; do echo ready; sleep 0.1; done'")
     pty.start()
     sm.register("sub-test", pty)
     session = sm.get_session("sub-test")

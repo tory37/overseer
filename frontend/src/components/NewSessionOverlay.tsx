@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { X, Plus, Terminal, Search, Folder, Zap, Globe, Cpu, Play } from 'lucide-react'
 import FileBrowser from './FileBrowser'
-import { getBaseUrl, type Persona } from '../utils/api'
+import { getBaseUrl, type Persona, type Skill, getSkills } from '../utils/api'
 import { AgentAvatar } from './AgentAvatar'
 
 interface NewSessionOverlayProps {
   personas: Persona[]
   onClose: () => void
-  onLaunch: (name: string, path: string, command: string, personaId: string | null) => void
+  onLaunch: (name: string, path: string, command: string, personaId: string | null, selectedSkills: string[]) => void
 }
 
 export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOverlayProps) => {
@@ -17,6 +17,8 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
   const [filter, setFilter] = useState('')
   const [showFileBrowser, setShowFileBrowser] = useState(false)
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
+  const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
 
   const presets = [
     { id: 'gemini', name: 'Gemini CLI', cmd: 'gemini --approval-mode yolo', icon: Zap, color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/30' },
@@ -30,6 +32,10 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
       .then(data => setRepos(data.repos || []))
       .catch(err => console.error("Failed to fetch config:", err))
 
+    getSkills()
+      .then(setAvailableSkills)
+      .catch(err => console.error("Failed to fetch skills:", err))
+
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
@@ -40,8 +46,14 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
   const handleLaunch = () => {
     const repo = repos.find(r => r.path === selectedPath)
     const name = repo ? repo.name : (selectedPath.split('/').pop() || 'New Session')
-    onLaunch(name, selectedPath, selectedCommand, selectedPersonaId)
+    onLaunch(name, selectedPath, selectedCommand, selectedPersonaId, selectedSkills)
   }
+
+  const toggleSkill = (skillId: string) => {
+    setSelectedSkills(prev => 
+      prev.includes(skillId) ? prev.filter(id => id !== skillId) : [...prev, skillId]
+    );
+  };
   
   return (
     <div className="absolute inset-0 bg-slate-950 z-50 flex flex-col animate-in fade-in duration-300">
@@ -141,6 +153,32 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
                 ))}
               </div>
             </div>
+
+            {/* Skill Selection */}
+            {availableSkills.length > 0 && (
+              <div className="space-y-3 pt-4 border-t border-slate-800">
+                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Active Skills</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {availableSkills.map(skill => (
+                    <div
+                      key={skill.id}
+                      onClick={() => toggleSkill(skill.id)}
+                      className={`px-3 py-2 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${
+                        selectedSkills.includes(skill.id)
+                          ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
+                          : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:border-slate-700'
+                      }`}
+                    >
+                      <Zap className={`w-3.5 h-3.5 ${selectedSkills.includes(skill.id) ? 'text-orange-400' : 'text-slate-700'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-[11px] truncate">{skill.name}</p>
+                        {skill.category && <p className="text-[9px] opacity-50 truncate">{skill.category}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-3">
               {presets.map(p => (

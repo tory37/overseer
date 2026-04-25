@@ -39,6 +39,13 @@ class Persona(BaseModel):
     instructions: str
     avatarConfig: AvatarConfig = AvatarConfig()
 
+class Skill(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    content: str
+
 class Group(BaseModel):
     id: str
     name: str
@@ -51,12 +58,14 @@ class SessionTab(BaseModel):
     cwd: Optional[str] = None
     command: Optional[str] = None
     personaId: Optional[str] = None
+    selected_skills: List[str] = []
     active: bool = False
 
 class Config(BaseModel):
     repos: List[Repo] = []
     groups: List[Group] = []
     sessions: List[SessionTab] = []
+    skills_directory: Optional[str] = None
     personas: List[Persona] = [
         Persona(
             id="senior",
@@ -147,6 +156,10 @@ class Store:
                 self.save()
                 return
         raise ValueError(f"Persona '{persona_id}' not found.")
+
+    def set_skills_directory(self, path: str):
+        self.config.skills_directory = path
+        self.save()
 
     def update_sessions(self, sessions: List[SessionTab]):
         self.config.sessions = sessions
