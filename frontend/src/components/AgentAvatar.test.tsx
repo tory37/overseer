@@ -19,12 +19,17 @@ vi.mock('framer-motion', () => ({
 
 const config: AvatarConfig = {
   eyes: 'variant01',
-  mouth: 'variant04',
+  mouth: 'happy04',
   hair: 'short01',
   skinColor: 'fcd5b0',
   hairColor: '6b3a2a',
   backgroundColor: '1e293b',
   clothingColor: '5bc0de',
+  clothing: 'variant01',
+  glasses: '',
+  beard: '',
+  hat: '',
+  accessories: '',
 };
 
 describe('AgentAvatar', () => {

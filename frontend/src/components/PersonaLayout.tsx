@@ -75,7 +75,7 @@ export const PersonaLayout: React.FC<PersonaLayoutProps> = ({
         onNewSession={onNewSession}
       />
       <main className="flex-1 overflow-hidden flex flex-col">
-        {specialView === 'persona-studio' && <PersonaStudio />}
+        {specialView === 'persona-studio' && <PersonaStudio onPersonaChanged={onPersonaCreated} />}
         {specialView === 'config' && <Configuration />}
         {specialView === 'repositories' && <Repositories onNewSession={onNewSession} />}
         {specialView === 'search' && (

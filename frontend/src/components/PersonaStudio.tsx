@@ -6,7 +6,11 @@ import { DEFAULT_AVATAR_CONFIG } from '../utils/api';
 import { AgentAvatar } from './AgentAvatar';
 import { Plus, Search, Save, Trash2, X, Ghost } from 'lucide-react';
 
-const PersonaStudio: React.FC = () => {
+interface PersonaStudioProps {
+    onPersonaChanged?: () => void;
+}
+
+const PersonaStudio: React.FC<PersonaStudioProps> = ({ onPersonaChanged }) => {
     const [personas, setPersonas] = useState<Persona[]>([]);
     const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
     const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -74,6 +78,7 @@ const PersonaStudio: React.FC = () => {
                 await updatePersona(selectedPersona.id, formData as Persona);
             }
             await fetchPersonas();
+            onPersonaChanged?.();
             setIsCreatingNew(false);
             setSelectedPersona(null);
             setFormData({});
@@ -93,6 +98,7 @@ const PersonaStudio: React.FC = () => {
         try {
             await deletePersona(id);
             await fetchPersonas();
+            onPersonaChanged?.();
             if (selectedPersona?.id === id) {
                 setSelectedPersona(null);
                 setFormData({});
@@ -239,6 +245,7 @@ const PersonaStudio: React.FC = () => {
                                 <div className="flex gap-8">
                                     {/* Left: controls */}
                                     <div className="flex-1 space-y-4">
+                                        {/* Eyes */}
                                         <div>
                                             <label className="block text-xs text-slate-400 mb-1">Eyes</label>
                                             <select
@@ -246,35 +253,128 @@ const PersonaStudio: React.FC = () => {
                                                 onChange={e => handleAvatarConfigChange('eyes', e.target.value)}
                                                 className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                                             >
-                                                <option value="variant01">Default</option>
-                                                <option value="variant09">Narrow</option>
-                                                <option value="variant06">Wide</option>
+                                                {Array.from({ length: 12 }, (_, i) => `variant${String(i + 1).padStart(2, '0')}`).map(v => (
+                                                    <option key={v} value={v}>Style {v.replace('variant', '')}</option>
+                                                ))}
                                             </select>
                                         </div>
+                                        {/* Mouth */}
                                         <div>
                                             <label className="block text-xs text-slate-400 mb-1">Mouth</label>
                                             <select
-                                                value={formData.avatarConfig?.mouth ?? 'variant04'}
+                                                value={formData.avatarConfig?.mouth ?? 'happy04'}
                                                 onChange={e => handleAvatarConfigChange('mouth', e.target.value)}
                                                 className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                                             >
-                                                <option value="variant04">Smile</option>
-                                                <option value="variant09">Open</option>
-                                                <option value="variant14">Grin</option>
+                                                <optgroup label="Happy">
+                                                    {Array.from({ length: 13 }, (_, i) => `happy${String(i + 1).padStart(2, '0')}`).map(v => (
+                                                        <option key={v} value={v}>Happy {v.replace('happy', '')}</option>
+                                                    ))}
+                                                </optgroup>
+                                                <optgroup label="Sad">
+                                                    {Array.from({ length: 10 }, (_, i) => `sad${String(i + 1).padStart(2, '0')}`).map(v => (
+                                                        <option key={v} value={v}>Sad {v.replace('sad', '')}</option>
+                                                    ))}
+                                                </optgroup>
                                             </select>
                                         </div>
+                                        {/* Hair */}
                                         <div>
-                                            <label className="block text-xs text-slate-400 mb-1">Hair</label>
+                                            <label className="block text-xs text-slate-400 mb-1">Hair Style</label>
                                             <select
                                                 value={formData.avatarConfig?.hair ?? 'short01'}
                                                 onChange={e => handleAvatarConfigChange('hair', e.target.value)}
                                                 className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                                             >
-                                                <option value="short01">Short</option>
-                                                <option value="short02">Short Alt</option>
-                                                <option value="mohawk01">Mohawk</option>
+                                                <optgroup label="Short">
+                                                    {Array.from({ length: 24 }, (_, i) => `short${String(i + 1).padStart(2, '0')}`).map(v => (
+                                                        <option key={v} value={v}>Short {v.replace('short', '')}</option>
+                                                    ))}
+                                                </optgroup>
+                                                <optgroup label="Long">
+                                                    {Array.from({ length: 21 }, (_, i) => `long${String(i + 1).padStart(2, '0')}`).map(v => (
+                                                        <option key={v} value={v}>Long {v.replace('long', '')}</option>
+                                                    ))}
+                                                </optgroup>
                                             </select>
                                         </div>
+                                        {/* Clothing Style */}
+                                        <div>
+                                            <label className="block text-xs text-slate-400 mb-1">Clothing Style</label>
+                                            <select
+                                                value={formData.avatarConfig?.clothing ?? 'variant01'}
+                                                onChange={e => handleAvatarConfigChange('clothing', e.target.value)}
+                                                className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            >
+                                                {Array.from({ length: 23 }, (_, i) => `variant${String(i + 1).padStart(2, '0')}`).map(v => (
+                                                    <option key={v} value={v}>Style {v.replace('variant', '')}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        {/* Glasses */}
+                                        <div>
+                                            <label className="block text-xs text-slate-400 mb-1">Glasses</label>
+                                            <select
+                                                value={formData.avatarConfig?.glasses ?? ''}
+                                                onChange={e => handleAvatarConfigChange('glasses', e.target.value)}
+                                                className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            >
+                                                <option value="">None</option>
+                                                <optgroup label="Light">
+                                                    {Array.from({ length: 7 }, (_, i) => `light${String(i + 1).padStart(2, '0')}`).map(v => (
+                                                        <option key={v} value={v}>Light {v.replace('light', '')}</option>
+                                                    ))}
+                                                </optgroup>
+                                                <optgroup label="Dark">
+                                                    {Array.from({ length: 7 }, (_, i) => `dark${String(i + 1).padStart(2, '0')}`).map(v => (
+                                                        <option key={v} value={v}>Dark {v.replace('dark', '')}</option>
+                                                    ))}
+                                                </optgroup>
+                                            </select>
+                                        </div>
+                                        {/* Beard */}
+                                        <div>
+                                            <label className="block text-xs text-slate-400 mb-1">Beard</label>
+                                            <select
+                                                value={formData.avatarConfig?.beard ?? ''}
+                                                onChange={e => handleAvatarConfigChange('beard', e.target.value)}
+                                                className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            >
+                                                <option value="">None</option>
+                                                {Array.from({ length: 8 }, (_, i) => `variant${String(i + 1).padStart(2, '0')}`).map(v => (
+                                                    <option key={v} value={v}>Style {v.replace('variant', '')}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        {/* Hat */}
+                                        <div>
+                                            <label className="block text-xs text-slate-400 mb-1">Hat</label>
+                                            <select
+                                                value={formData.avatarConfig?.hat ?? ''}
+                                                onChange={e => handleAvatarConfigChange('hat', e.target.value)}
+                                                className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            >
+                                                <option value="">None</option>
+                                                {Array.from({ length: 10 }, (_, i) => `variant${String(i + 1).padStart(2, '0')}`).map(v => (
+                                                    <option key={v} value={v}>Style {v.replace('variant', '')}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        {/* Accessories */}
+                                        <div>
+                                            <label className="block text-xs text-slate-400 mb-1">Accessories</label>
+                                            <select
+                                                value={formData.avatarConfig?.accessories ?? ''}
+                                                onChange={e => handleAvatarConfigChange('accessories', e.target.value)}
+                                                className="w-full bg-slate-900/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            >
+                                                <option value="">None</option>
+                                                {Array.from({ length: 4 }, (_, i) => `variant${String(i + 1).padStart(2, '0')}`).map(v => (
+                                                    <option key={v} value={v}>Style {v.replace('variant', '')}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        {/* Skin Tone */}
                                         <div>
                                             <label className="block text-xs text-slate-400 mb-2">Skin Tone</label>
                                             <div className="flex gap-2 flex-wrap">
@@ -290,6 +390,7 @@ const PersonaStudio: React.FC = () => {
                                                 ))}
                                             </div>
                                         </div>
+                                        {/* Hair Color */}
                                         <div>
                                             <label className="block text-xs text-slate-400 mb-2">Hair Color</label>
                                             <div className="flex gap-2 flex-wrap">
@@ -305,6 +406,7 @@ const PersonaStudio: React.FC = () => {
                                                 ))}
                                             </div>
                                         </div>
+                                        {/* Clothing Color */}
                                         <div>
                                             <label className="block text-xs text-slate-400 mb-2">Clothing Color</label>
                                             <div className="flex gap-2 flex-wrap">
@@ -320,6 +422,7 @@ const PersonaStudio: React.FC = () => {
                                                 ))}
                                             </div>
                                         </div>
+                                        {/* Background */}
                                         <div>
                                             <label className="block text-xs text-slate-400 mb-2">Background</label>
                                             <div className="flex gap-2 flex-wrap">

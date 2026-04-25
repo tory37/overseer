@@ -7,9 +7,9 @@ from pydantic import BaseModel
 CONFIG_PATH = Path.home() / ".overseer.json"
 
 BUILTIN_AVATAR_CONFIGS = {
-    "senior": {"eyes": "variant09", "mouth": "variant14", "hair": "short01", "skinColor": "f5cba7", "hairColor": "6b6b6b", "backgroundColor": "1e293b", "clothingColor": "4a5568"},
-    "intern": {"eyes": "variant01", "mouth": "variant04", "hair": "short02", "skinColor": "fcd5b0", "hairColor": "8b4513", "backgroundColor": "0f172a", "clothingColor": "5bc0de"},
-    "cyberpunk": {"eyes": "variant06", "mouth": "variant09", "hair": "mohawk01", "skinColor": "d4a574", "hairColor": "00ff88", "backgroundColor": "0a0a0f", "clothingColor": "00ff88"},
+    "senior": {"eyes": "variant09", "mouth": "sad04", "hair": "short01", "skinColor": "f5cba7", "hairColor": "6b6b6b", "backgroundColor": "1e293b", "clothingColor": "4a5568", "clothing": "variant05", "glasses": "", "beard": "", "hat": "", "accessories": ""},
+    "intern": {"eyes": "variant01", "mouth": "happy10", "hair": "short02", "skinColor": "fcd5b0", "hairColor": "8b4513", "backgroundColor": "0f172a", "clothingColor": "5bc0de", "clothing": "variant01", "glasses": "", "beard": "", "hat": "", "accessories": ""},
+    "cyberpunk": {"eyes": "variant06", "mouth": "happy02", "hair": "short21", "skinColor": "d4a574", "hairColor": "00ff88", "backgroundColor": "0a0a0f", "clothingColor": "00ff88", "clothing": "variant09", "glasses": "dark03", "beard": "", "hat": "", "accessories": ""},
 }
 
 class Repo(BaseModel):
@@ -20,12 +20,17 @@ class Repo(BaseModel):
 
 class AvatarConfig(BaseModel):
     eyes: str = "variant01"
-    mouth: str = "variant04"
+    mouth: str = "happy04"
     hair: str = "short01"
     skinColor: str = "fcd5b0"
     hairColor: str = "6b3a2a"
     backgroundColor: str = "1e293b"
     clothingColor: str = "5bc0de"
+    clothing: str = "variant01"
+    glasses: str = ""
+    beard: str = ""
+    hat: str = ""
+    accessories: str = ""
 
 class Persona(BaseModel):
     id: str
@@ -58,21 +63,21 @@ class Config(BaseModel):
             name="Walt",
             title="The Senior",
             instructions="You are a grumpy senior engineer. Be brief, cynical, and obsessed with DRY and clean code.",
-            avatarConfig=AvatarConfig(eyes="variant09", mouth="variant14", hair="short01", skinColor="f5cba7", hairColor="6b6b6b", backgroundColor="1e293b", clothingColor="4a5568"),
+            avatarConfig=AvatarConfig(eyes="variant09", mouth="sad04", hair="short01", skinColor="f5cba7", hairColor="6b6b6b", backgroundColor="1e293b", clothingColor="4a5568", clothing="variant05"),
         ),
         Persona(
             id="intern",
             name="Tyler",
             title="The Intern",
             instructions="You are an over-eager intern. Use lots of emojis and be very enthusiastic about learning.",
-            avatarConfig=AvatarConfig(eyes="variant01", mouth="variant04", hair="short02", skinColor="fcd5b0", hairColor="8b4513", backgroundColor="0f172a", clothingColor="5bc0de"),
+            avatarConfig=AvatarConfig(eyes="variant01", mouth="happy10", hair="short02", skinColor="fcd5b0", hairColor="8b4513", backgroundColor="0f172a", clothingColor="5bc0de", clothing="variant01"),
         ),
         Persona(
             id="cyberpunk",
             name="Nyx",
             title="The Cyber-Punk",
             instructions="You are a cynical netrunner. Use glitchy metaphors and treat coding like a battlefield.",
-            avatarConfig=AvatarConfig(eyes="variant06", mouth="variant09", hair="mohawk01", skinColor="d4a574", hairColor="00ff88", backgroundColor="0a0a0f", clothingColor="00ff88"),
+            avatarConfig=AvatarConfig(eyes="variant06", mouth="happy02", hair="short21", skinColor="d4a574", hairColor="00ff88", backgroundColor="0a0a0f", clothingColor="00ff88", clothing="variant09", glasses="dark03"),
         ),
     ]
 

@@ -26,23 +26,33 @@ export const AgentAvatar: React.FC<AgentAvatarProps> = ({
     }
     setMouthVariant(avatarConfig.mouth);
     const interval = setInterval(() => {
-      setMouthVariant(v => (v === avatarConfig.mouth ? 'variant01' : avatarConfig.mouth));
+      setMouthVariant(v => (v === avatarConfig.mouth ? 'happy07' : avatarConfig.mouth));
     }, 150);
     return () => clearInterval(interval);
   }, [talkingUntil, state, avatarConfig.mouth]);
 
   const svgDataUrl = useMemo(() => {
-    const avatar = createAvatar(pixelArt, {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opts: Record<string, any> = {
       eyes: [avatarConfig.eyes],
       mouth: [mouthVariant],
       hair: [avatarConfig.hair],
       skinColor: [avatarConfig.skinColor],
       hairColor: [avatarConfig.hairColor],
       backgroundColor: [avatarConfig.backgroundColor],
-      clothing: ['shirt'],
+      clothing: [avatarConfig.clothing],
       clothingColor: [avatarConfig.clothingColor],
+      glassesProbability: avatarConfig.glasses ? 100 : 0,
+      beardProbability: avatarConfig.beard ? 100 : 0,
+      hatProbability: avatarConfig.hat ? 100 : 0,
+      accessoriesProbability: avatarConfig.accessories ? 100 : 0,
       size,
-    });
+    };
+    if (avatarConfig.glasses) opts.glasses = [avatarConfig.glasses];
+    if (avatarConfig.beard) opts.beard = [avatarConfig.beard];
+    if (avatarConfig.hat) opts.hat = [avatarConfig.hat];
+    if (avatarConfig.accessories) opts.accessories = [avatarConfig.accessories];
+    const avatar = createAvatar(pixelArt, opts);
     const svg = avatar.toString();
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   }, [avatarConfig, mouthVariant, size]);
