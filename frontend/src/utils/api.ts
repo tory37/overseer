@@ -47,10 +47,17 @@ export interface Persona {
 export interface Session {
   id: string;
   state: 'running' | 'stopped';
-  // Add other session properties as needed
 }
 
 export interface Skill {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  content: string;
+}
+
+export interface Agent {
   id: string;
   name: string;
   description?: string;
@@ -74,12 +81,19 @@ export const getSkills = async (): Promise<Skill[]> => {
   return response.json();
 };
 
+export const getAgents = async (): Promise<Agent[]> => {
+  const response = await fetch(`${getBaseUrl()}/api/agents`);
+  if (!response.ok) {
+    throw new Error(`Error fetching agents: ${response.statusText}`);
+  }
+  return response.json();
+};
+
 export const createSession = async (
   name: string,
   cwd: string,
   command: string,
   personaId: string | null,
-  selectedSkills: string[] = [],
   rows?: number,
   cols?: number,
 ): Promise<Session> => {
@@ -88,7 +102,14 @@ export const createSession = async (
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ name, cwd, command, personaId, selectedSkills, rows, cols }),
+    body: JSON.stringify({ 
+      name, 
+      cwd, 
+      command, 
+      personaId, 
+      rows, 
+      cols 
+    }),
   });
   if (!response.ok) {
     throw new Error(`Error creating session: ${response.statusText}`);
@@ -136,7 +157,46 @@ export const deleteSkill = async (id: string): Promise<void> => {
   }
 };
 
-// Placeholder for other API calls that might exist
+export const createAgent = async (agent: Omit<Agent, 'id'>): Promise<{ id: string }> => {
+  const response = await fetch(`${getBaseUrl()}/api/agents`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(agent),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Error creating agent: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+export const updateAgent = async (id: string, agent: Partial<Agent>): Promise<{ id: string } | void> => {
+  const response = await fetch(`${getBaseUrl()}/api/agents/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(agent),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Error updating agent: ${response.statusText}`);
+  }
+  return response.json().catch(() => ({}));
+};
+
+export const deleteAgent = async (id: string): Promise<void> => {
+  const response = await fetch(`${getBaseUrl()}/api/agents/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Error deleting agent: ${response.statusText}`);
+  }
+};
+
 export const createPersona = async (persona: Persona): Promise<Persona> => {
   const response = await fetch(`${getBaseUrl()}/api/personas`, {
     method: 'POST',

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
-import { X, Terminal, Search, Folder, Play, Check, AlertCircle, Info } from 'lucide-react'
+import { X, Terminal, Search, Folder, Play, Info } from 'lucide-react'
 import FileBrowser from './FileBrowser'
-import { getBaseUrl, type Persona, type Skill, getSkills } from '../utils/api'
+import { getBaseUrl, type Persona } from '../utils/api'
 import { AgentAvatar } from './AgentAvatar'
 
 interface NewSessionOverlayProps {
   personas: Persona[]
   onClose: () => void
-  onLaunch: (name: string, path: string, command: string, personaId: string | null, selectedSkills: string[]) => void
+  onLaunch: (name: string, path: string, command: string, personaId: string | null) => void
 }
 
 export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOverlayProps) => {
@@ -18,9 +18,6 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
   const [showFileBrowser, setShowFileBrowser] = useState(false)
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
   const [showPersonaInfo, setShowPersonaInfo] = useState<string | null>(null);
-  const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [isLoadingSkills, setIsLoadingSkills] = useState(false);
 
   useEffect(() => {
     fetch(`${getBaseUrl()}/api/repos`)
@@ -29,32 +26,9 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
       .catch(err => console.error("Failed to fetch repos:", err))
   }, [])
 
-  useEffect(() => {
-    const fetchSkills = async () => {
-      setIsLoadingSkills(true);
-      try {
-        const skills = await getSkills();
-        setAvailableSkills(skills);
-      } catch (err) {
-        console.error("Failed to fetch skills:", err);
-      } finally {
-        setIsLoadingSkills(false);
-      }
-    };
-    fetchSkills();
-  }, []);
-
   const handleLaunch = () => {
-    onLaunch("New Session", selectedPath, selectedCommand, selectedPersonaId, selectedSkills)
+    onLaunch("New Session", selectedPath, selectedCommand, selectedPersonaId)
   }
-
-  const toggleSkill = (skillId: string) => {
-    setSelectedSkills(prev => 
-      prev.includes(skillId) 
-        ? prev.filter(id => id !== skillId) 
-        : [...prev, skillId]
-    );
-  };
 
   return (
     <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
@@ -100,7 +74,7 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
                     className={`p-4 rounded-xl border transition-all cursor-pointer group outline-none focus:ring-2 focus:ring-blue-500/50 ${
                       selectedPath === repo.path 
                         ? 'bg-blue-600/10 border-blue-500 text-blue-400' 
-                        : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -183,7 +157,7 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
                                 <Info className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                            {selectedPersonaId === persona.id && <Check className="w-4 h-4 text-blue-500" />}
+                            {selectedPersonaId === persona.id && <CheckIcon />}
                           </div>
                           <p className="text-[10px] text-slate-500 truncate">{persona.title}</p>
                         </div>
@@ -199,33 +173,15 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
                 </div>
               </div>
 
-              {/* Skills Selection */}
-              <div className="space-y-3">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Active Skills</h4>
-                <div className="flex flex-wrap gap-2">
-                  {isLoadingSkills ? (
-                    <div className="text-[10px] text-slate-600 animate-pulse px-1">Loading skills...</div>
-                  ) : availableSkills.length > 0 ? (
-                    availableSkills.map(skill => (
-                      <button
-                        key={skill.name}
-                        onClick={() => toggleSkill(skill.name)}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
-                          selectedSkills.includes(skill.name)
-                            ? 'bg-blue-600/20 border-blue-500/50 text-blue-400'
-                            : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-400'
-                        }`}
-                      >
-                        {skill.name}
-                      </button>
-                    ))
-                  ) : (
-                    <div className="flex items-center gap-2 px-1 text-slate-600 italic">
-                      <AlertCircle className="w-3 h-3" />
-                      <span className="text-[10px]">No skills found in directory</span>
-                    </div>
-                  )}
+              {/* Discovery Note */}
+              <div className="p-4 rounded-xl border border-blue-500/10 bg-blue-500/5 space-y-2">
+                <div className="flex items-center gap-2 text-blue-400">
+                  <Info className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Resource Discovery</span>
                 </div>
+                <p className="text-[10px] text-slate-500 leading-relaxed">
+                  Your agent will automatically have access to your Skill and Agent libraries via environment variables. It can browse them as needed to adopt specialized roles or expertise.
+                </p>
               </div>
 
               {/* Command Input */}
@@ -266,3 +222,9 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
     </div>
   )
 }
+
+const CheckIcon = () => (
+  <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+  </svg>
+)

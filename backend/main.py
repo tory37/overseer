@@ -3,7 +3,7 @@ import os
 import json
 import uvicorn
 import logging
-from typing import Optional, List
+from typing import Optional, List, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -25,15 +25,23 @@ class NewSessionRequest(BaseModel):
     name: str
     cwd: str
     personaId: Optional[str] = None
-    selectedSkills: Optional[List[str]] = []
-    command: Optional[str] = None # Added command field
+    command: Optional[str] = None
     rows: Optional[int] = 24
     cols: Optional[int] = 80
 
 class SkillsDirectoryRequest(BaseModel):
     path: str
 
+class AgentsDirectoryRequest(BaseModel):
+    path: str
+
 class SkillUpdate(BaseModel):
+    name: str
+    content: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+
+class AgentUpdate(BaseModel):
     name: str
     content: str
     description: Optional[str] = None
@@ -75,18 +83,21 @@ async def set_skills_directory(request: SkillsDirectoryRequest):
     store.set_skills_directory(request.path)
     return {"status": "ok"}
 
-@app.get("/api/skills")
-async def list_skills():
-    skills_dir = store.config.skills_directory
-    if not skills_dir:
+@app.post("/api/config/agents-directory")
+async def set_agents_directory(request: AgentsDirectoryRequest):
+    store.set_agents_directory(request.path)
+    return {"status": "ok"}
+
+def _list_markdown_resources(directory_path: Optional[str]):
+    if not directory_path:
         return []
     
-    abs_skills_dir = os.path.abspath(os.path.expanduser(skills_dir))
-    if not os.path.exists(abs_skills_dir):
+    abs_dir = os.path.abspath(os.path.expanduser(directory_path))
+    if not os.path.exists(abs_dir):
         return []
     
-    skills = []
-    for root, dirs, files in os.walk(abs_skills_dir):
+    resources = []
+    for root, dirs, files in os.walk(abs_dir):
         if 'node_modules' in dirs:
             dirs.remove('node_modules')
         if '.git' in dirs:
@@ -95,21 +106,19 @@ async def list_skills():
         for file in files:
             if file.endswith(".md"):
                 file_path = os.path.join(root, file)
-                rel_path = os.path.relpath(file_path, abs_skills_dir)
+                rel_path = os.path.relpath(file_path, abs_dir)
                 try:
                     with open(file_path, "r") as f:
                         content = f.read()
                     
-                    # Simple frontmatter parsing
                     name = file.replace(".md", "")
                     description = ""
                     category = os.path.dirname(rel_path)
                     
-                    # If it's SKILL.md, use the folder name as the name
-                    if file == "SKILL.md":
+                    if file == "SKILL.md" or file == "AGENT.md":
                         name = os.path.basename(os.path.dirname(file_path)) or name
 
-                    skills.append({
+                    resources.append({
                         "id": rel_path,
                         "name": name,
                         "description": description,
@@ -117,105 +126,128 @@ async def list_skills():
                         "content": content
                     })
                 except Exception as e:
-                    logger.error(f"Error reading skill {file_path}: {e}")
+                    logger.error(f"Error reading resource {file_path}: {e}")
                     
-    return skills
+    return resources
+
+@app.get("/api/skills")
+async def list_skills():
+    return _list_markdown_resources(store.config.skills_directory)
+
+@app.get("/api/agents")
+async def list_agents():
+    return _list_markdown_resources(store.config.agents_directory)
 
 @app.post("/api/skills")
 async def create_skill(skill: SkillUpdate):
-    skills_dir = store.config.skills_directory
-    if not skills_dir:
-        raise HTTPException(status_code=400, detail="Skills directory not configured. Please set it in the Configuration tab.")
+    return _create_markdown_resource(store.config.skills_directory, skill)
 
-    # Use category as subfolder if provided
-    target_dir = os.path.abspath(os.path.expanduser(skills_dir))
+@app.post("/api/agents")
+async def create_agent(agent: AgentUpdate):
+    return _create_markdown_resource(store.config.agents_directory, agent)
 
-    if skill.category:
-        target_dir = os.path.join(target_dir, skill.category)
+def _create_markdown_resource(directory_path: Optional[str], resource: Any):
+    if not directory_path:
+        raise HTTPException(status_code=400, detail="Directory not configured.")
+
+    base_dir = os.path.abspath(os.path.expanduser(directory_path))
+    target_dir = base_dir
+
+    if resource.category:
+        target_dir = os.path.join(target_dir, resource.category)
     
     os.makedirs(target_dir, exist_ok=True)
     
-    file_name = f"{skill.name.lower().replace(' ', '-')}.md"
+    file_name = f"{resource.name.lower().replace(' ', '-')}.md"
     file_path = os.path.join(target_dir, file_name)
     
     if os.path.exists(file_path):
-        raise HTTPException(status_code=409, detail="Skill already exists")
+        raise HTTPException(status_code=409, detail="Resource already exists")
     
     try:
         with open(file_path, "w") as f:
-            f.write(skill.content)
-        return {"id": os.path.relpath(file_path, os.path.abspath(os.path.expanduser(skills_dir)))}
+            f.write(resource.content)
+        return {"id": os.path.relpath(file_path, base_dir)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 @app.put("/api/skills/{skill_id:path}")
 async def update_skill(skill_id: str, skill: SkillUpdate):
-    skills_dir = store.config.skills_directory
-    if not skills_dir:
-        raise HTTPException(status_code=400, detail="Skills directory not configured. Please set it in the Configuration tab.")
+    return _update_markdown_resource(store.config.skills_directory, skill_id, skill)
 
-    base_dir = os.path.abspath(os.path.expanduser(skills_dir))
-    old_file_path = os.path.join(base_dir, skill_id)
+@app.put("/api/agents/{agent_id:path}")
+async def update_agent(agent_id: str, agent: AgentUpdate):
+    return _update_markdown_resource(store.config.agents_directory, agent_id, agent)
+
+def _update_markdown_resource(directory_path: Optional[str], resource_id: str, resource: Any):
+    if not directory_path:
+        raise HTTPException(status_code=400, detail="Directory not configured.")
+
+    base_dir = os.path.abspath(os.path.expanduser(directory_path))
+    old_file_path = os.path.join(base_dir, resource_id)
     if not os.path.exists(old_file_path):
-        raise HTTPException(status_code=404, detail="Skill not found")
+        raise HTTPException(status_code=404, detail="Resource not found")
 
-    # Determine new path
     target_dir = base_dir
-    if skill.category:
-        target_dir = os.path.join(target_dir, skill.category)
+    if resource.category:
+        target_dir = os.path.join(target_dir, resource.category)
 
     os.makedirs(target_dir, exist_ok=True)
 
-    new_file_name = f"{skill.name.lower().replace(' ', '-')}.md"
+    new_file_name = f"{resource.name.lower().replace(' ', '-')}.md"
     new_file_path = os.path.join(target_dir, new_file_name)
 
     try:
-        # If path changed, move the file (or just write new and delete old)
         if os.path.abspath(old_file_path) != os.path.abspath(new_file_path):
             if os.path.exists(new_file_path):
-                raise HTTPException(status_code=409, detail="Target skill name already exists")
+                raise HTTPException(status_code=409, detail="Target name already exists")
 
             with open(new_file_path, "w") as f:
-                f.write(skill.content)
+                f.write(resource.content)
             os.remove(old_file_path)
             
-            # Clean up old empty parent directories
             old_parent = os.path.dirname(old_file_path)
             if old_parent != base_dir and not os.listdir(old_parent):
                 os.rmdir(old_parent)
         else:
             with open(new_file_path, "w") as f:
-                f.write(skill.content)
+                f.write(resource.content)
 
         return {"id": os.path.relpath(new_file_path, base_dir)}
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating skill: {e}")
+        logger.error(f"Error updating resource: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.delete("/api/skills/{skill_id:path}")
 async def delete_skill(skill_id: str):
-    skills_dir = store.config.skills_directory
-    if not skills_dir:
-        raise HTTPException(status_code=400, detail="Skills directory not configured.")
+    return _delete_markdown_resource(store.config.skills_directory, skill_id)
 
-    base_dir = os.path.abspath(os.path.expanduser(skills_dir))
-    file_path = os.path.join(base_dir, skill_id)
+@app.delete("/api/agents/{agent_id:path}")
+async def delete_agent(agent_id: str):
+    return _delete_markdown_resource(store.config.agents_directory, agent_id)
+
+def _delete_markdown_resource(directory_path: Optional[str], resource_id: str):
+    if not directory_path:
+        raise HTTPException(status_code=400, detail="Directory not configured.")
+
+    base_dir = os.path.abspath(os.path.expanduser(directory_path))
+    file_path = os.path.join(base_dir, resource_id)
     
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Skill not found")
+        raise HTTPException(status_code=404, detail="Resource not found")
         
     try:
         os.remove(file_path)
-        # Optional: Clean up empty parent directories
         parent = os.path.dirname(file_path)
         if parent != base_dir and not os.listdir(parent):
             os.rmdir(parent)
         return {"status": "ok"}
     except Exception as e:
-        logger.error(f"Error deleting skill: {e}")
+        logger.error(f"Error deleting resource: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @app.get("/api/sessions")
@@ -235,7 +267,6 @@ async def create_session(request: NewSessionRequest):
         request.cwd, 
         persona, 
         request.command,
-        selected_skills=request.selectedSkills,
         rows=request.rows,
         cols=request.cols
     ) 

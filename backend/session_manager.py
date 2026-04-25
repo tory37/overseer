@@ -19,6 +19,7 @@ class SessionMetadata(BaseModel):
     name: str
     cwd: str
     personaId: Optional[str] = None
+    selectedAgentId: Optional[str] = None
 
 
 class Session:
@@ -126,6 +127,7 @@ class SessionManager:
                 name=stored.name,
                 cwd=stored.cwd or "/tmp",
                 personaId=stored.personaId,
+                selectedAgentId=stored.selectedAgentId,
             )
             self.register(session_id, pty, metadata)
 
@@ -141,19 +143,23 @@ class SessionManager:
         persona: Optional[Persona] = None,
         command: Optional[str] = None,
         session_id: Optional[str] = None,
-        selected_skills: Optional[List[str]] = None,
         rows: int = 24,
         cols: int = 80,
     ):
         if session_id is None:
             session_id = str(uuid.uuid4())
 
+        from backend.store import Store
+        store = Store()
+
         extra_env: dict = {}
         instructions = ""
+        
+        # 1. Persona (Voice and Tone)
         if persona:
             instructions += (
-                f"Your name is {persona.name}. Your title is {persona.title}. {persona.instructions}\n\n"
-                "CRITICAL: ALL conversational speech, greetings, 'flair', personality interjections, or explanations MUST be wrapped in <voice> tags. "
+                f"# PERSONA: {persona.name} ({persona.title})\n{persona.instructions}\n\n"
+                "CRITICAL VOICE CONSTRAINT: ALL conversational speech, greetings, 'flair', personality interjections, or explanations MUST be wrapped in <voice> tags. "
                 "The ONLY things that should be OUTSIDE of <voice> tags are raw terminal commands, code, file paths, tree structures, or command logs. "
                 "Examples: "
                 "- '<voice>Hello! I am ready to help.</voice>' "
@@ -163,22 +169,23 @@ class SessionManager:
                 "NEVER send plain text greetings or explanations without <voice> tags. If you are speaking to the user, use <voice>.\n"
             )
 
-        if selected_skills:
-            from backend.store import Store
-            store = Store()
-            skills_dir = store.config.skills_directory
-            if skills_dir:
-                abs_skills_dir = os.path.abspath(os.path.expanduser(skills_dir))
-                instructions += "\n# Active Skills\n"
-                for skill_id in selected_skills:
-                    skill_path = os.path.join(abs_skills_dir, skill_id)
-                    if os.path.exists(skill_path):
-                        try:
-                            with open(skill_path, "r") as f:
-                                skill_content = f.read()
-                            instructions += f"\n## Skill: {skill_id}\n{skill_content}\n"
-                        except Exception as e:
-                            logger.error(f"Failed to read skill {skill_path}: {e}")
+        # 2. Resource Libraries (Discovery Approach)
+        skills_dir = store.config.skills_directory
+        agents_dir = store.config.agents_directory
+        
+        instructions += "\n# RESOURCE LIBRARIES\n"
+        instructions += "You have access to specialized libraries of instructions. Browse these directories using your file system tools to find specific guidance or adopt specialized workflows.\n"
+        
+        if skills_dir:
+            abs_skills_dir = os.path.abspath(os.path.expanduser(skills_dir))
+            extra_env["OVERSEER_SKILLS_DIR"] = abs_skills_dir
+            instructions += f"- Technical Skills: {abs_skills_dir} (Expertise manuals)\n"
+            
+        if agents_dir:
+            abs_agents_dir = os.path.abspath(os.path.expanduser(agents_dir))
+            extra_env["OVERSEER_AGENTS_DIR"] = abs_agents_dir
+            instructions += f"- Agent Roles: {abs_agents_dir} (Workflow definitions)\n"
+
 
         if instructions:
             temp_path = f"/tmp/overseer_persona_{session_id}.md"
@@ -205,6 +212,7 @@ class SessionManager:
             name=name,
             cwd=cwd,
             personaId=persona.id if persona else None,
+            selectedAgentId=agent_id
         )
         self.register(session_id, pty, metadata)
         return session_id

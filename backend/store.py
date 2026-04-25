@@ -70,6 +70,7 @@ class SessionTab(BaseModel):
     cwd: Optional[str] = None
     command: Optional[str] = None
     personaId: Optional[str] = None
+    selectedAgentId: Optional[str] = None
     selected_skills: List[str] = []
     active: bool = False
 
@@ -78,6 +79,7 @@ class Config(BaseModel):
     groups: List[Group] = []
     sessions: List[SessionTab] = []
     skills_directory: Optional[str] = None
+    agents_directory: Optional[str] = None
     personas: List[Persona] = [
         Persona(
             id="sailor",
@@ -255,6 +257,10 @@ class Store:
 
     def set_skills_directory(self, path: str):
         self.config.skills_directory = path
+        self.save()
+
+    def set_agents_directory(self, path: str):
+        self.config.agents_directory = path
         self.save()
 
     def update_sessions(self, sessions: List[SessionTab]):
