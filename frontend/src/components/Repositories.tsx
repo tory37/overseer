@@ -107,7 +107,7 @@ export const Repositories = ({ onNewSession }: RepositoriesProps) => {
       </div>
 
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Repository">
-        <div className="flex flex-col flex-grow h-full overflow-hidden">
+        <div className="flex flex-col h-[500px]">
           <div className="space-y-2 mb-4 flex-shrink-0">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Display Name</label>
             <input
@@ -126,7 +126,8 @@ export const Repositories = ({ onNewSession }: RepositoriesProps) => {
               onPathChange={path => setNewRepo(prev => ({ ...prev, path }))}
               onSelectPath={path => setNewRepo(prev => ({ ...prev, path }))}
               initialPath={newRepo.path || '/'}
-              showHeader={false}
+              showHeader={true}
+              title="Select Repository Path"
             />
           </div>
           <p className="text-sm font-medium text-slate-400 mb-4 flex-shrink-0">

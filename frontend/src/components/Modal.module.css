@@ -17,7 +17,8 @@
     background: #0f172a; /* slate-900 */
     border: 1px solid #1e293b; /* slate-800 */
     border-radius: 1rem;
-    width: auto;
+    width: 600px;
+    min-height: 400px;
     max-width: 90vw;
     max-height: 90vh;
     display: flex;
@@ -60,5 +61,7 @@
 
 .modalBody {
     flex: 1;
-    overflow: hidden; /* Let children handle their own scrolling */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }

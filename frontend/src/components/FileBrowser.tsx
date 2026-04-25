@@ -98,7 +98,7 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
     };
 
     return (
-        <div className="flex flex-col h-full bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
+        <div className="flex flex-col h-full min-h-0 bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
             {/* Header */}
             {showHeader && (
                 <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
