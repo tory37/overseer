@@ -90,11 +90,14 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                {repos.filter(r => r.name.toLowerCase().includes(filter.toLowerCase())).map(repo => (
+                {Array.isArray(repos) && repos.filter(r => r.name.toLowerCase().includes(filter.toLowerCase())).map(repo => (
                   <div 
                     key={repo.id}
                     onClick={() => { setSelectedPath(repo.path); setShowFileBrowser(false); }}
-                    className={`p-4 rounded-xl border transition-all cursor-pointer group ${
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedPath(repo.path); setShowFileBrowser(false); } }}
+                    role="button"
+                    tabIndex={0}
+                    className={`p-4 rounded-xl border transition-all cursor-pointer group outline-none focus:ring-2 focus:ring-blue-500/50 ${
                       selectedPath === repo.path 
                         ? 'bg-blue-600/10 border-blue-500 text-blue-400' 
                         : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
@@ -144,9 +147,12 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
                 <div className="grid grid-cols-1 gap-2">
                   {personas.map(persona => (
                     <div key={persona.id} className="space-y-2">
-                      <button
+                      <div
                         onClick={() => setSelectedPersonaId(persona.id)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedPersonaId(persona.id); }}
+                        role="button"
+                        tabIndex={0}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/50 ${
                           selectedPersonaId === persona.id
                             ? 'bg-blue-600/10 border-blue-500'
                             : 'bg-slate-950 border-slate-800 hover:border-slate-700'
@@ -172,6 +178,7 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
                                     ? 'bg-slate-800 text-blue-400' 
                                     : 'text-slate-600 hover:text-slate-400 hover:bg-slate-800'
                                 }`}
+                                aria-label="Toggle persona info"
                               >
                                 <Info className="w-3.5 h-3.5" />
                               </button>
@@ -180,7 +187,7 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
                           </div>
                           <p className="text-[10px] text-slate-500 truncate">{persona.title}</p>
                         </div>
-                      </button>
+                      </div>
                       
                       {showPersonaInfo === persona.id && (
                         <div className="mx-2 p-3 bg-slate-950/50 border border-slate-800/50 rounded-lg text-[10px] text-slate-400 leading-relaxed animate-in slide-in-from-top-1 duration-200">

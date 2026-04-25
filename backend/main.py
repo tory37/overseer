@@ -289,6 +289,10 @@ async def delete_session_endpoint(session_id: str):
     store.delete_session(session_id)
     return {"status": "ok"}
 
+@app.get("/api/repos")
+async def get_repos():
+    return store.config.repos
+
 @app.post("/api/repos")
 async def add_repo(repo: Repo):
     store.add_repo(repo)
