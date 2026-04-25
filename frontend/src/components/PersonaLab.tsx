@@ -108,7 +108,7 @@ export const PersonaLab: React.FC<PersonaLabProps> = ({ onCreated }) => {
                         value={persona.title}
                         onChange={handleChange}
                         className="w-full bg-slate-900/50 border border-slate-800 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        placeholder="The Senior"
+                        placeholder="The Salty Sailor"
                     />
                 </div>
                 <div>

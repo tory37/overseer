@@ -22,17 +22,17 @@ def test_get_personas(temp_store):
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) >= 3
+    assert len(data) >= 15
     persona_ids = [p["id"] for p in data]
-    assert "senior" in persona_ids
-    assert "intern" in persona_ids
-    assert "cyberpunk" in persona_ids
-    senior = next(p for p in data if p["id"] == "senior")
-    assert "avatarConfig" in senior
-    assert senior["avatarConfig"]["eyes"] == "variant09"
-    assert senior["title"] == "The Senior"
-    assert senior["name"] == "Walt"
-    assert senior["avatarConfig"]["clothingColor"] == "4a5568"
+    assert "sailor" in persona_ids
+    assert "zen" in persona_ids
+    assert "shadow" in persona_ids
+    sailor = next(p for p in data if p["id"] == "sailor")
+    assert "avatarConfig" in sailor
+    assert sailor["avatarConfig"]["eyes"] == "variant05"
+    assert sailor["title"] == "The Salty Sailor"
+    assert sailor["name"] == "Barnaby"
+    assert sailor["avatarConfig"]["clothingColor"] == "4a5568"
 
 def test_create_persona():
     new_persona = {

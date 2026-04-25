@@ -16,24 +16,24 @@ def temp_store(tmp_path):
 def test_persona_defaults(temp_store):
     store = temp_store
     assert hasattr(store.config, "personas")
-    assert len(store.config.personas) == 3
+    assert len(store.config.personas) == 15
 
-    senior = next((p for p in store.config.personas if p.id == "senior"), None)
-    assert senior is not None
-    assert senior.title == "The Senior"
-    assert senior.name == "Walt"
-    assert "grumpy senior engineer" in senior.instructions
-    assert hasattr(senior, "avatarConfig")
+    sailor = next((p for p in store.config.personas if p.id == "sailor"), None)
+    assert sailor is not None
+    assert sailor.title == "The Salty Sailor"
+    assert sailor.name == "Barnaby"
+    assert "old sea dog" in sailor.instructions
+    assert hasattr(sailor, "avatarConfig")
 
 def test_add_persona(temp_store):
     store = temp_store
     new_persona = Persona(id="custom", name="Alex", title="The Helper", instructions="Be helpful.")
     store.config.personas.append(new_persona)
-    assert len(store.config.personas) == 4
+    assert len(store.config.personas) == 16
 
     store.save()
     new_store = Store()
-    assert len(new_store.config.personas) == 4
+    assert len(new_store.config.personas) == 16
     custom = next((p for p in new_store.config.personas if p.id == "custom"), None)
     assert custom is not None
     assert custom.name == "Alex"
@@ -93,10 +93,10 @@ def test_delete_persona(temp_store):
 
 def test_update_persona(temp_store):
     store = temp_store
-    updated = Persona(id="senior", name="Walter", title="The Senior", instructions="Updated instructions.")
-    store.update_persona("senior", updated)
-    retrieved = store.get_persona("senior")
-    assert retrieved.name == "Walter"
+    updated = Persona(id="sailor", name="Barnaby II", title="The Saltiest Sailor", instructions="Updated instructions.")
+    store.update_persona("sailor", updated)
+    retrieved = store.get_persona("sailor")
+    assert retrieved.name == "Barnaby II"
     assert retrieved.instructions == "Updated instructions."
 
 def test_update_persona_not_found(temp_store):
@@ -113,7 +113,7 @@ def test_update_persona_id_mismatch(temp_store):
     store = temp_store
     mismatched = Persona(id="different-id", name="X", title="X", instructions="X.")
     with pytest.raises(ValueError, match="does not match"):
-        store.update_persona("senior", mismatched)
+        store.update_persona("sailor", mismatched)
 
 def test_migration_old_name_to_title(tmp_path):
     old_data = {

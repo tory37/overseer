@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Terminal, Search, Folder, Play, Check, AlertCircle } from 'lucide-react'
+import { X, Terminal, Search, Folder, Play, Check, AlertCircle, Info } from 'lucide-react'
 import FileBrowser from './FileBrowser'
 import { getBaseUrl, type Persona, type Skill, getSkills } from '../utils/api'
 import { AgentAvatar } from './AgentAvatar'
@@ -17,6 +17,7 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
   const [filter, setFilter] = useState('')
   const [showFileBrowser, setShowFileBrowser] = useState(false)
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
+  const [showPersonaInfo, setShowPersonaInfo] = useState<string | null>(null);
   const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isLoadingSkills, setIsLoadingSkills] = useState(false);
@@ -142,29 +143,51 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
                 <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Select Persona</h4>
                 <div className="grid grid-cols-1 gap-2">
                   {personas.map(persona => (
-                    <button
-                      key={persona.id}
-                      onClick={() => setSelectedPersonaId(persona.id)}
-                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                        selectedPersonaId === persona.id
-                          ? 'bg-blue-600/10 border-blue-500'
-                          : 'bg-slate-950 border-slate-800 hover:border-slate-700'
-                      }`}
-                    >
-                      <AgentAvatar 
-                        avatarConfig={persona.avatarConfig} 
-                        className={`w-10 h-10 ${selectedPersonaId === persona.id ? '' : 'grayscale opacity-50'}`} 
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className={`font-bold text-sm truncate ${selectedPersonaId === persona.id ? 'text-blue-400' : 'text-slate-300'}`}>
-                            {persona.name}
-                          </p>
-                          {selectedPersonaId === persona.id && <Check className="w-4 h-4 text-blue-500" />}
+                    <div key={persona.id} className="space-y-2">
+                      <button
+                        onClick={() => setSelectedPersonaId(persona.id)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                          selectedPersonaId === persona.id
+                            ? 'bg-blue-600/10 border-blue-500'
+                            : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <AgentAvatar 
+                          avatarConfig={persona.avatarConfig} 
+                          className={`w-10 h-10 flex-shrink-0 ${selectedPersonaId === persona.id ? '' : 'grayscale opacity-50'}`} 
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <p className={`font-bold text-sm truncate ${selectedPersonaId === persona.id ? 'text-blue-400' : 'text-slate-300'}`}>
+                                {persona.name}
+                              </p>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowPersonaInfo(showPersonaInfo === persona.id ? null : persona.id);
+                                }}
+                                className={`p-1 rounded-md transition-colors ${
+                                  showPersonaInfo === persona.id 
+                                    ? 'bg-slate-800 text-blue-400' 
+                                    : 'text-slate-600 hover:text-slate-400 hover:bg-slate-800'
+                                }`}
+                              >
+                                <Info className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            {selectedPersonaId === persona.id && <Check className="w-4 h-4 text-blue-500" />}
+                          </div>
+                          <p className="text-[10px] text-slate-500 truncate">{persona.title}</p>
                         </div>
-                        <p className="text-[10px] text-slate-500 truncate">{persona.title}</p>
-                      </div>
-                    </button>
+                      </button>
+                      
+                      {showPersonaInfo === persona.id && (
+                        <div className="mx-2 p-3 bg-slate-950/50 border border-slate-800/50 rounded-lg text-[10px] text-slate-400 leading-relaxed animate-in slide-in-from-top-1 duration-200">
+                          <p className="whitespace-pre-wrap">{persona.instructions}</p>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>

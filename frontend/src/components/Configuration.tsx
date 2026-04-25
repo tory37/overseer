@@ -105,7 +105,7 @@ export const Configuration: React.FC = () => {
         onClose={() => setIsBrowserOpen(false)} 
         title="Browse Skills Directory"
       >
-        <div className="min-w-[600px] h-[500px]">
+        <div className="w-full max-w-[600px] h-[500px]">
           <FileBrowser 
             initialPath={skillsDir || '~'} 
             onSelectPath={handleSelectPath}
