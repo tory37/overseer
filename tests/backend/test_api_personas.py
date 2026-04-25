@@ -91,6 +91,24 @@ def test_update_persona():
     assert data["title"] == "New Title"
     assert data["instructions"] == "Updated instructions."
 
+    # Verify the updated values are actually stored
+    response = client.get("/api/personas")
+    personas = response.json()
+    updated_persona = next((p for p in personas if p["id"] == "to-update"), None)
+    assert updated_persona is not None
+    assert updated_persona["name"] == "New"
+    assert updated_persona["title"] == "New Title"
+    assert updated_persona["instructions"] == "Updated instructions."
+
+def test_update_persona_id_mismatch():
+    response = client.put("/api/personas/foo", json={
+        "id": "bar", "name": "X", "title": "X", "instructions": "x",
+        "avatarConfig": {"eyes": "variant01", "mouth": "variant04", "hair": "short01",
+                         "skinColor": "fcd5b0", "hairColor": "6b3a2a",
+                         "backgroundColor": "1e293b", "clothingColor": "5bc0de"}
+    })
+    assert response.status_code == 422
+
 import unittest.mock as mock
 from backend.session_manager import SessionManager, Persona
 

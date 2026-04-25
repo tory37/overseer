@@ -89,6 +89,8 @@ async def delete_persona(persona_id: str):
 
 @app.put("/api/personas/{persona_id}")
 async def update_persona(persona_id: str, persona: Persona):
+    if persona.id != persona_id:
+        raise HTTPException(status_code=422, detail=f"Body id '{persona.id}' does not match URL id '{persona_id}'.")
     try:
         store.update_persona(persona_id, persona)
     except ValueError as e:
