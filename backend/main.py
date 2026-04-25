@@ -25,6 +25,7 @@ class NewSessionRequest(BaseModel):
     name: str
     cwd: str
     personaId: Optional[str] = None
+    selectedAgentId: Optional[str] = None
     command: Optional[str] = None
     rows: Optional[int] = 24
     cols: Optional[int] = 80
@@ -268,7 +269,8 @@ async def create_session(request: NewSessionRequest):
         persona, 
         request.command,
         rows=request.rows,
-        cols=request.cols
+        cols=request.cols,
+        agent_id=request.selectedAgentId
     ) 
     return {"id": session_id}
 
@@ -429,7 +431,8 @@ async def voice_test_websocket(websocket: WebSocket, sessionId: str = Query(...)
                                 cwd=session_tab.cwd,
                                 persona=persona,
                                 command=session_tab.command or "/bin/bash",
-                                session_id=sessionId
+                                session_id=sessionId,
+                                agent_id=session_tab.selectedAgentId
                             )
                             session = session_manager.get_session(sessionId)
                     
@@ -459,6 +462,7 @@ async def terminal_websocket(
     cwd: Optional[str] = Query(None),
     command: Optional[str] = Query("/bin/bash"),
     personaId: Optional[str] = Query(None),
+    agentId: Optional[str] = Query(None),
     rows: int = Query(24),
     cols: int = Query(80)
 ):
@@ -475,6 +479,8 @@ async def terminal_websocket(
                 name = session_tab.name
                 if not personaId:
                     personaId = session_tab.personaId
+                if not agentId:
+                    agentId = session_tab.selectedAgentId
             
             persona = None
             if personaId:
@@ -488,7 +494,8 @@ async def terminal_websocket(
                     command=command,
                     session_id=sessionId,
                     rows=rows,
-                    cols=cols
+                    cols=cols,
+                    agent_id=agentId
                 )
                 session = session_manager.get_session(sessionId)
             except Exception as e:

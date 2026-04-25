@@ -145,6 +145,7 @@ class SessionManager:
         session_id: Optional[str] = None,
         rows: int = 24,
         cols: int = 80,
+        agent_id: Optional[str] = None,
     ):
         if session_id is None:
             session_id = str(uuid.uuid4())
