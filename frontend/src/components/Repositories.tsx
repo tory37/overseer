@@ -123,8 +123,10 @@ export const Repositories = ({ onNewSession }: RepositoriesProps) => {
           </p>
           <div className="flex-grow min-h-0 mb-4 border border-slate-700 rounded-lg overflow-hidden">
             <FileBrowser
+              onPathChange={path => setNewRepo(prev => ({ ...prev, path }))}
               onSelectPath={path => setNewRepo(prev => ({ ...prev, path }))}
               initialPath={newRepo.path || '/'}
+              showHeader={false}
             />
           </div>
           <p className="text-sm font-medium text-slate-400 mb-4 flex-shrink-0">

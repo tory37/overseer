@@ -5,53 +5,60 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(2, 6, 23, 0.85); /* slate-950 with opacity */
+    backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000; /* Ensure modal is on top */
+    z-index: 1000;
 }
 
 .modalContent {
-    background: #1e293b; /* Dark background */
-    padding: 20px;
-    border-radius: 8px;
-    min-width: 500px;
-    max-width: 80%;
-    max-height: 80%;
-    overflow: auto;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    background: #0f172a; /* slate-900 */
+    border: 1px solid #1e293b; /* slate-800 */
+    border-radius: 1rem;
+    width: auto;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     position: relative;
-    color: #cbd5e1; /* Default text color for dark background (slate-300) */
 }
 
 .modalHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
-    border-bottom: 1px solid #334155; /* Darker border */
-    padding-bottom: 10px;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #1e293b;
 }
 
 .modalHeader h2 {
     margin: 0;
-    font-size: 1.5em;
-    color: white; /* White title for dark background */
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #f1f5f9; /* slate-100 */
 }
 
 .closeButton {
-    background: none;
+    background: transparent;
     border: none;
-    font-size: 1.8em;
+    font-size: 1.5rem;
     cursor: pointer;
-    color: #94a3b8; /* Lighter grey for close button */
+    color: #64748b; /* slate-500 */
+    line-height: 1;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
 }
 
 .closeButton:hover {
-    color: white;
+    color: #f1f5f9;
+    background: #1e293b;
 }
 
 .modalBody {
-    /* Content styling */
+    flex: 1;
+    overflow: hidden; /* Let children handle their own scrolling */
 }

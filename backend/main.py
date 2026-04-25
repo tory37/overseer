@@ -125,10 +125,11 @@ async def list_skills():
 async def create_skill(skill: SkillUpdate):
     skills_dir = store.config.skills_directory
     if not skills_dir:
-        raise HTTPException(status_code=400, detail="Skills directory not configured")
-    
+        raise HTTPException(status_code=400, detail="Skills directory not configured. Please set it in the Configuration tab.")
+
     # Use category as subfolder if provided
     target_dir = os.path.abspath(os.path.expanduser(skills_dir))
+
     if skill.category:
         target_dir = os.path.join(target_dir, skill.category)
     
@@ -146,23 +147,76 @@ async def create_skill(skill: SkillUpdate):
         return {"id": os.path.relpath(file_path, os.path.abspath(os.path.expanduser(skills_dir)))}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 @app.put("/api/skills/{skill_id:path}")
 async def update_skill(skill_id: str, skill: SkillUpdate):
     skills_dir = store.config.skills_directory
     if not skills_dir:
-        raise HTTPException(status_code=400, detail="Skills directory not configured")
+        raise HTTPException(status_code=400, detail="Skills directory not configured. Please set it in the Configuration tab.")
+
+    base_dir = os.path.abspath(os.path.expanduser(skills_dir))
+    old_file_path = os.path.join(base_dir, skill_id)
+    if not os.path.exists(old_file_path):
+        raise HTTPException(status_code=404, detail="Skill not found")
+
+    # Determine new path
+    target_dir = base_dir
+    if skill.category:
+        target_dir = os.path.join(target_dir, skill.category)
+
+    os.makedirs(target_dir, exist_ok=True)
+
+    new_file_name = f"{skill.name.lower().replace(' ', '-')}.md"
+    new_file_path = os.path.join(target_dir, new_file_name)
+
+    try:
+        # If path changed, move the file (or just write new and delete old)
+        if os.path.abspath(old_file_path) != os.path.abspath(new_file_path):
+            if os.path.exists(new_file_path):
+                raise HTTPException(status_code=409, detail="Target skill name already exists")
+
+            with open(new_file_path, "w") as f:
+                f.write(skill.content)
+            os.remove(old_file_path)
+            
+            # Clean up old empty parent directories
+            old_parent = os.path.dirname(old_file_path)
+            if old_parent != base_dir and not os.listdir(old_parent):
+                os.rmdir(old_parent)
+        else:
+            with open(new_file_path, "w") as f:
+                f.write(skill.content)
+
+        return {"id": os.path.relpath(new_file_path, base_dir)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating skill: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/skills/{skill_id:path}")
+async def delete_skill(skill_id: str):
+    skills_dir = store.config.skills_directory
+    if not skills_dir:
+        raise HTTPException(status_code=400, detail="Skills directory not configured.")
+
+    base_dir = os.path.abspath(os.path.expanduser(skills_dir))
+    file_path = os.path.join(base_dir, skill_id)
     
-    file_path = os.path.join(os.path.abspath(os.path.expanduser(skills_dir)), skill_id)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Skill not found")
-    
+        
     try:
-        with open(file_path, "w") as f:
-            f.write(skill.content)
+        os.remove(file_path)
+        # Optional: Clean up empty parent directories
+        parent = os.path.dirname(file_path)
+        if parent != base_dir and not os.listdir(parent):
+            os.rmdir(parent)
         return {"status": "ok"}
     except Exception as e:
+        logger.error(f"Error deleting skill: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/sessions")
 async def get_sessions():
@@ -260,17 +314,17 @@ async def list_dir(path: str = Query(".")):
 
         for entry in os.scandir(abs_path):
             try:
-                if entry.is_dir() and not entry.name.startswith('.'):
+                if not entry.name.startswith('.'):
                     entries.append({
                         "name": entry.name,
                         "path": entry.path,
-                        "is_dir": True
+                        "is_dir": entry.is_dir()
                     })
             except OSError:
                 continue
         
-        # Sort by name
-        entries.sort(key=lambda x: x["name"].lower())
+        # Sort: directories first, then files, both alphabetically
+        entries.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
         return {"current_path": abs_path, "entries": entries}
     except Exception as e:
         return {"error": str(e), "entries": []}

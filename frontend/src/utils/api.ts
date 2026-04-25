@@ -105,12 +105,13 @@ export const createSkill = async (skill: Omit<Skill, 'id'>): Promise<{ id: strin
     body: JSON.stringify(skill),
   });
   if (!response.ok) {
-    throw new Error(`Error creating skill: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Error creating skill: ${response.statusText}`);
   }
   return response.json();
 };
 
-export const updateSkill = async (id: string, skill: Partial<Skill>): Promise<void> => {
+export const updateSkill = async (id: string, skill: Partial<Skill>): Promise<{ id: string } | void> => {
   const response = await fetch(`${getBaseUrl()}/api/skills/${id}`, {
     method: 'PUT',
     headers: {
@@ -119,7 +120,19 @@ export const updateSkill = async (id: string, skill: Partial<Skill>): Promise<vo
     body: JSON.stringify(skill),
   });
   if (!response.ok) {
-    throw new Error(`Error updating skill: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Error updating skill: ${response.statusText}`);
+  }
+  return response.json().catch(() => ({}));
+};
+
+export const deleteSkill = async (id: string): Promise<void> => {
+  const response = await fetch(`${getBaseUrl()}/api/skills/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Error deleting skill: ${response.statusText}`);
   }
 };
 

@@ -19,14 +19,14 @@ async def test_terminal_websocket_sends_buffer_on_connect():
     session_id = f"test-buffer-{int(time.time())}"
     
     print(f"DEBUG: Starting PTY for session {session_id}")
-    pty = PtyManager(command="echo 'existing data'; sleep 10")
+    pty = PtyManager(session_id=session_id, command="echo 'existing data'; sleep 10")
     pty.start()
     
     # Wait for output to be produced and buffered
     found = False
     for _ in range(20):
         # Manually read to populate the buffer
-        data = await anyio.to_thread.run_sync(pty.read, 1024)
+        data = await anyio.to_thread.run_sync(pty.read_raw, 1024)
         if b"existing data" in pty.get_buffer():
             found = True
             break
@@ -44,8 +44,8 @@ async def test_terminal_websocket_sends_buffer_on_connect():
     with TestClient(app) as client:
         with client.websocket_connect(f"/ws/terminal?sessionId={session_id}") as websocket:
             # The first message should be the buffer
-            data = websocket.receive_text()
+            data = websocket.receive_bytes()
             print(f"DEBUG: Received via WS: {data}")
-            assert "existing data" in data
+            assert b"existing data" in data
             
     sm.unregister(session_id)

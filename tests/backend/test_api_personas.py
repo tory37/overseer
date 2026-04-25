@@ -1,10 +1,23 @@
 import pytest
 from fastapi.testclient import TestClient
 from backend.main import app
+from backend import store as backend_store
 
 client = TestClient(app)
 
-def test_get_personas():
+@pytest.fixture
+def temp_store(tmp_path):
+    config_file = tmp_path / ".overseer.json"
+    original_path = backend_store.CONFIG_PATH
+    backend_store.CONFIG_PATH = config_file
+    # Reset store in main
+    import backend.main
+    from backend.store import Store
+    backend.main.store = Store()
+    yield backend.main.store
+    backend_store.CONFIG_PATH = original_path
+
+def test_get_personas(temp_store):
     response = client.get("/api/personas")
     assert response.status_code == 200
     data = response.json()
