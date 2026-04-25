@@ -50,9 +50,9 @@ function App() {
     }).catch(err => console.error('Failed to sync sessions:', err))
   }, [tabs])
 
-  const openTab = async (name: string, path: string, command?: string, personaId: string | null = null, selectedSkills: string[] = []) => {
+  const openTab = async (name: string, path: string, command: string = '', personaId: string | null = null) => {
     try {
-      const session = await createSession(name, path, command || '', personaId, selectedSkills, 30, 120)
+      const session = await createSession(name, path, command, personaId, 24, 80)
       const id = session.id
       setTabs(prev => [...prev.map(t => ({ ...t, active: false })), { id, type: 'agent', name, cwd: path, command, personaId, active: true }])
     } catch (err) {
@@ -93,7 +93,7 @@ function App() {
         <NewSessionOverlay
           personas={personas}
           onClose={() => setIsCreatingSession(false)}
-          onLaunch={(name, path, command, personaId, selectedSkills) => openTab(name, path, command, personaId, selectedSkills)}
+          onLaunch={(name: string, path: string, command: string, personaId: string | null) => openTab(name, path, command, personaId)}
         />
       )}
     </>

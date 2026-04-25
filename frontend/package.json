@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "release:run": "uvx --refresh --from git+https://github.com/tory37/overseer overseer --port 8001"
   },
   "dependencies": {
     "@dicebear/collection": "^9.4.2",
