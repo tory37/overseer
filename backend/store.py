@@ -152,6 +152,10 @@ class Store:
         self.config.sessions = sessions
         self.save()
 
+    def delete_session(self, session_id: str):
+        self.config.sessions = [s for s in self.config.sessions if s.id != session_id]
+        self.save()
+
     def get_persona(self, persona_id: str) -> Optional[Persona]:
         for persona in self.config.personas:
             if persona.id == persona_id:
