@@ -59,8 +59,8 @@ const PersonaStudio: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.id || !formData.name || !formData.instructions) {
-            setError('ID, Name, and Instructions are required.');
+        if (!formData.id || !formData.name || !formData.title || !formData.instructions) {
+            setError('ID, Name, Title, and Instructions are required.');
             return;
         }
 
