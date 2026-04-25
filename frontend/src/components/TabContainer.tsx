@@ -1,11 +1,11 @@
-import { Panel, Group, Separator } from 'react-resizable-panels'
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels'
 import { Terminal, type TerminalHandle } from './Terminal'
 import { UtilityPane } from './UtilityPane'
+import { MascotWidget } from './MascotWidget'
 import { useState, useCallback, useRef } from 'react'
-import { PixelAgent } from './PixelAgent'
 import type { Persona } from '../utils/api'
-import { DEFAULT_AVATAR_CONFIG } from '../utils/api';
-import type { AvatarConfig } from '../utils/api';
+import { DEFAULT_AVATAR_CONFIG } from '../utils/api'
+import type { AvatarConfig } from '../utils/api'
 
 interface TabContainerProps {
   id: string
@@ -21,111 +21,84 @@ export interface VoiceMessage {
   text: string
   timestamp: number
   sender: 'agent' | 'user'
-  isStreaming?: boolean
 }
 
-export const TabContainer = ({ id, cwd, command, personaId, personas, onPersonaCreated }: TabContainerProps) => {
-  const [messages, setMessages] = useState<VoiceMessage[]>([])
+export const TabContainer = ({
+  id,
+  cwd,
+  command,
+  personaId,
+  personas,
+  onPersonaCreated,
+}: TabContainerProps) => {
+  // Only track the single latest voice message — mascot picks it up
+  const [latestVoice, setLatestVoice] = useState<VoiceMessage | null>(null)
   const [isWorking, setIsWorking] = useState(false)
   const terminalRef = useRef<TerminalHandle>(null)
 
   const handleVoiceMessage = useCallback((text: string, msgId?: string) => {
-    setMessages(prev => {
-      const id = msgId || 'default';
-      const existingIndex = prev.findIndex(m => m.id === id);
-      
-      if (existingIndex !== -1) {
-        const newMessages = [...prev];
-        newMessages[existingIndex] = {
-          ...newMessages[existingIndex],
-          text,
-          timestamp: Date.now(),
-        };
-        return newMessages;
-      }
-      
-      return [...prev, {
-        id,
-        text,
-        timestamp: Date.now(),
-        sender: 'agent'
-      }];
-    });
+    setLatestVoice({
+      id: msgId || `voice-${Date.now()}`,
+      text,
+      timestamp: Date.now(),
+      sender: 'agent',
+    })
   }, [])
 
   const handleActivity = useCallback((working: boolean) => {
     setIsWorking(working)
   }, [])
 
-  const handleSendMessage = useCallback((text: string) => {
-    // Add to local history
-    setMessages(prev => [...prev, {
-      id: Math.random().toString(36).substring(7),
-      text,
-      timestamp: Date.now(),
-      sender: 'user'
-    }])
-
-    // Send to terminal with Carriage Return + Line Feed (Enter)
-    terminalRef.current?.sendInput(text + '\r\n')
-  }, [])
-
   const activePersona = personas.find(p => p.id === personaId)
-  const avatarConfig: AvatarConfig = activePersona?.avatarConfig ?? DEFAULT_AVATAR_CONFIG;
+  const avatarConfig: AvatarConfig = activePersona?.avatarConfig ?? DEFAULT_AVATAR_CONFIG
   const personaName = activePersona?.name || 'Overseer'
 
   return (
     <div className="flex-1 w-full h-full overflow-hidden flex flex-col">
-      <Group orientation="horizontal">
-        {/* Panel 1: Agent Chat */}
-        <Panel defaultSize={30} minSize={20}>
-          <div className="h-full w-full bg-slate-950 border-r border-slate-900 flex flex-col">
-            <PixelAgent
-              messages={messages}
-              isWorking={isWorking}
-              avatarConfig={avatarConfig}
-              personaName={personaName}
-              onSendMessage={handleSendMessage}
-            />
-          </div>
-        </Panel>
-
-        <Separator className="w-1.5 bg-slate-900 border-x border-slate-800/50 hover:bg-blue-600/50 transition-all cursor-col-resize flex items-center justify-center group">
-          <div className="w-[1px] h-8 bg-slate-700 group-hover:bg-blue-400 transition-colors"></div>
-        </Separator>
-        
-        {/* Panel 2: Terminal */}
-        <Panel defaultSize={40} minSize={30}>
-          <div className="h-full w-full bg-black/20">
-            <Terminal 
+      <PanelGroup orientation="horizontal">
+        {/* Terminal — takes the full remaining space */}
+        <Panel defaultSize={65} minSize={40}>
+          {/* Relative container so MascotWidget can be absolutely positioned inside */}
+          <div className="h-full w-full bg-black/20 relative">
+            <Terminal
               ref={terminalRef}
-              id={id} 
-              cwd={cwd} 
-              command={command} 
-              personaId={personaId} 
+              id={id}
+              cwd={cwd}
+              command={command}
+              personaId={personaId}
               onVoiceMessage={handleVoiceMessage}
               onActivity={handleActivity}
             />
+
+            {/* Mascot overlay — only shown when a persona is active */}
+            {personaId && (
+              <MascotWidget
+                latestVoice={latestVoice}
+                isWorking={isWorking}
+                avatarConfig={avatarConfig}
+                personaName={personaName}
+              />
+            )}
           </div>
         </Panel>
-        
-        <Separator className="w-1.5 bg-slate-900 border-x border-slate-800/50 hover:bg-blue-600/50 transition-all cursor-col-resize flex items-center justify-center group">
-          <div className="w-[1px] h-8 bg-slate-700 group-hover:bg-blue-400 transition-colors"></div>
-        </Separator>
-        
-        {/* Panel 3: Utility Pane */}
-        <Panel defaultSize={30} minSize={20}>
+
+        <PanelResizeHandle className="w-1.5 bg-slate-900 border-x border-slate-800/50 hover:bg-blue-600/50 transition-all cursor-col-resize flex items-center justify-center group">
+          <div className="w-[1px] h-8 bg-slate-700 group-hover:bg-blue-400 transition-colors" />
+        </PanelResizeHandle>
+
+        {/* Utility Pane */}
+        <Panel defaultSize={35} minSize={20}>
           <div className="h-full w-full bg-slate-950/50 border-l border-slate-900">
-            <UtilityPane 
-              id={id} 
-              cwd={cwd} 
-              onVoiceMessage={handleVoiceMessage} 
+            <UtilityPane
+              id={id}
+              cwd={cwd}
+              onVoiceMessage={handleVoiceMessage}
               onActivity={handleActivity}
-              onPersonaCreated={onPersonaCreated} 
+              onPersonaCreated={onPersonaCreated}
             />
           </div>
         </Panel>
-      </Group>
+      </PanelGroup>
     </div>
   )
 }

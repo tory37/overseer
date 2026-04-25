@@ -15,12 +15,12 @@ interface PixelAgentProps {
   isWorking: boolean;
   avatarConfig: AvatarConfig;
   personaName?: string;
-  onSendMessage?: (text: string) => void;
+  inputBuffer?: string;
+  onKeyInput?: (key: string) => void;
 }
 
-export const PixelAgent: React.FC<PixelAgentProps> = ({ messages, isWorking, avatarConfig, personaName, onSendMessage }) => {
+export const PixelAgent: React.FC<PixelAgentProps> = ({ messages, isWorking, avatarConfig, personaName, inputBuffer = '', onKeyInput }) => {
   const [talkingUntil, setTalkingUntil] = useState(0);
-  const [inputValue, setInputValue] = useState('');
   const [copied, setCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -40,12 +40,71 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({ messages, isWorking, ava
 
   const avatarState = isWorking ? 'thinking' : talkingUntil > Date.now() ? 'talking' : 'idle';
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    switch (e.key) {
+      case 'Enter':
+        e.preventDefault();
+        onKeyInput?.('\r');
+        return;
+      case 'Backspace':
+        e.preventDefault();
+        onKeyInput?.('\x7f');
+        return;
+      case 'Delete':
+        e.preventDefault();
+        onKeyInput?.('\x1b[3~');
+        return;
+      case 'Tab':
+        if (inputBuffer.length > 0) {
+          e.preventDefault();
+          onKeyInput?.('\t');
+        }
+        return;
+      case 'ArrowUp':
+        e.preventDefault();
+        onKeyInput?.('\x1b[A');
+        return;
+      case 'ArrowDown':
+        e.preventDefault();
+        onKeyInput?.('\x1b[B');
+        return;
+      case 'ArrowLeft':
+        e.preventDefault();
+        onKeyInput?.(e.ctrlKey ? '\x1b[1;5D' : '\x1b[D');
+        return;
+      case 'ArrowRight':
+        e.preventDefault();
+        onKeyInput?.(e.ctrlKey ? '\x1b[1;5C' : '\x1b[C');
+        return;
+      case 'Home':
+        e.preventDefault();
+        onKeyInput?.('\x1b[H');
+        return;
+      case 'End':
+        e.preventDefault();
+        onKeyInput?.('\x1b[F');
+        return;
+    }
 
-    onSendMessage?.(inputValue);
-    setInputValue('');
+    if (e.ctrlKey && !e.altKey && e.key.length === 1) {
+      const code = e.key.toLowerCase().charCodeAt(0) - 96;
+      if (code >= 1 && code <= 26) {
+        e.preventDefault();
+        onKeyInput?.(String.fromCharCode(code));
+        return;
+      }
+    }
+
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      onKeyInput?.(e.key);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text');
+    if (text) onKeyInput?.(text);
   };
 
   const handleCopyAll = () => {
@@ -120,17 +179,19 @@ export const PixelAgent: React.FC<PixelAgentProps> = ({ messages, isWorking, ava
 
       {/* Input Area */}
       <div className="p-4 border-t border-slate-900 bg-slate-950">
-        <form onSubmit={handleSubmit} className="relative">
+        <form onSubmit={(e) => { e.preventDefault(); onKeyInput?.('\r'); }} className="relative">
           <input
             type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            value={inputBuffer}
+            onChange={() => {}}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder="Type a command or message..."
             className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-4 pr-12 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/50 transition-all shadow-inner"
           />
           <button
             type="submit"
-            disabled={!inputValue.trim()}
+            disabled={!inputBuffer.trim()}
             className="absolute right-2 top-2 p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-20 disabled:grayscale transition-all active:scale-95 shadow-lg shadow-blue-900/20"
           >
             <Send className="w-4 h-4" />
