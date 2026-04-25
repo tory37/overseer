@@ -39,6 +39,8 @@ export const AgentAvatar: React.FC<AgentAvatarProps> = ({
       skinColor: [avatarConfig.skinColor],
       hairColor: [avatarConfig.hairColor],
       backgroundColor: [avatarConfig.backgroundColor],
+      clothing: ['shirt'],
+      clothingColor: [avatarConfig.clothingColor],
       size,
     });
     const svg = avatar.toString();

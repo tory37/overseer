@@ -24,6 +24,7 @@ const config: AvatarConfig = {
   skinColor: 'fcd5b0',
   hairColor: '6b3a2a',
   backgroundColor: '1e293b',
+  clothingColor: '5bc0de',
 };
 
 describe('AgentAvatar', () => {
