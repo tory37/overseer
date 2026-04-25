@@ -396,7 +396,13 @@ if os.path.exists(static_path):
     app.mount("/", StaticFiles(directory=static_path, html=True), name="static")
 
 def run():
-    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000)
+    import argparse
+    parser = argparse.ArgumentParser(description="Overseer - Managed Agent Isolation Control Plane")
+    parser.add_argument("--host", default="127.0.0.1", help="Host to bind to")
+    parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
+    args = parser.parse_args()
+    
+    uvicorn.run("backend.main:app", host=args.host, port=args.port)
 
 if __name__ == "__main__":
     run()

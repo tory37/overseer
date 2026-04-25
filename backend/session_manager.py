@@ -1,20 +1,25 @@
 import time
 import asyncio
 import os
+import subprocess
 import uuid
 import logging
-from typing import Dict, Optional, Set
+from typing import Dict, List, Optional, Set
 from pydantic import BaseModel
 from backend.pty_manager import PtyManager
-from backend.store import Persona
+from backend.store import Persona, SessionTab
 
 logger = logging.getLogger(__name__)
+
+_TMUX_PREFIX = "overseer-"
+
 
 class SessionMetadata(BaseModel):
     id: str
     name: str
     cwd: str
     personaId: Optional[str] = None
+
 
 class Session:
     def __init__(self, session_id: str, pty: PtyManager, metadata: Optional[SessionMetadata] = None):
@@ -35,15 +40,10 @@ class Session:
         logger.info(f"Session {self.session_id} _read_loop started.")
         try:
             while self.pty.is_alive():
-                # Use read_raw to avoid updating buffer outside our lock
                 data = await asyncio.to_thread(self.pty.read_raw)
                 if data:
                     async with self.lock:
                         logger.debug(f"Session {self.session_id} read {len(data)} bytes from PTY.")
-                        # Atomic update: buffer + broadcast
-                        self.pty.append_to_buffer(data)
-                        
-                        # Broadcast to all connected clients
                         disconnected_queues = []
                         for q in self.queues:
                             try:
@@ -51,18 +51,13 @@ class Session:
                             except asyncio.QueueFull:
                                 logger.warning(f"Session {self.session_id} queue full for one client, dropping data.")
                                 disconnected_queues.append(q)
-                        
                         for q in disconnected_queues:
                             self.queues.discard(q)
                 else:
-                    # Data is empty, check if PTY is still alive
                     if not self.pty.is_alive():
                         logger.info(f"Session {self.session_id} PTY not alive (EOF), _read_loop exiting.")
-                        break # PTY process has died
-                    await asyncio.sleep(0.01) # Small sleep to prevent busy-waiting if PTY is silent
-            
-            if not self.pty.is_alive():
-                logger.info(f"Session {self.session_id} PTY exited with status {getattr(self.pty.process, 'exitstatus', 'unknown')}")
+                        break
+                    await asyncio.sleep(0.01)
         except asyncio.CancelledError:
             logger.info(f"Session {self.session_id} _read_loop cancelled.")
         except Exception as e:
@@ -72,8 +67,9 @@ class Session:
             self._read_task = None
 
     async def subscribe(self) -> tuple[bytes, asyncio.Queue]:
+        # get_buffer is a blocking subprocess call — fetch outside the async lock
+        buffer = await asyncio.to_thread(self.pty.get_buffer)
         async with self.lock:
-            buffer = self.pty.get_buffer()
             q = asyncio.Queue()
             self.queues.add(q)
             self.last_accessed = time.time()
@@ -86,8 +82,8 @@ class Session:
     def stop(self):
         if self._read_task:
             self._read_task.cancel()
-        if self.pty.is_alive():
-            self.pty.stop()
+        self.pty.stop()
+
 
 class SessionManager:
     _instance = None
@@ -98,15 +94,60 @@ class SessionManager:
             cls._instance = super(SessionManager, cls).__new__(cls)
         return cls._instance
 
+    def startup_discover(self, stored_sessions: List[SessionTab]):
+        """Re-attach to tmux sessions that survived a backend restart."""
+        try:
+            result = subprocess.run(
+                ["tmux", "list-sessions", "-F", "#{session_name}"],
+                capture_output=True,
+                text=True,
+            )
+            live_names = {
+                line.strip()
+                for line in result.stdout.splitlines()
+                if line.strip().startswith(_TMUX_PREFIX)
+            }
+        except Exception as e:
+            logger.warning(f"startup_discover: could not list tmux sessions: {e}")
+            return
+
+        stored_by_id = {s.id: s for s in stored_sessions}
+
+        for name in live_names:
+            session_id = name[len(_TMUX_PREFIX):]
+            if session_id not in stored_by_id:
+                continue
+            stored = stored_by_id[session_id]
+            logger.info(f"startup_discover: re-attaching session {session_id}")
+            pty = PtyManager(session_id=session_id, command=stored.command, cwd=stored.cwd or "/tmp")
+            pty.attach()
+            metadata = SessionMetadata(
+                id=session_id,
+                name=stored.name,
+                cwd=stored.cwd or "/tmp",
+                personaId=stored.personaId,
+            )
+            self.register(session_id, pty, metadata)
+
     def register(self, session_id: str, pty: PtyManager, metadata: Optional[SessionMetadata] = None):
         session = Session(session_id, pty, metadata)
         session.start_reading()
         self._sessions[session_id] = session
 
-    async def create_session(self, name: str, cwd: str, persona: Optional[Persona] = None, command: Optional[str] = None, session_id: Optional[str] = None, rows: int = 24, cols: int = 80):
+    async def create_session(
+        self,
+        name: str,
+        cwd: str,
+        persona: Optional[Persona] = None,
+        command: Optional[str] = None,
+        session_id: Optional[str] = None,
+        rows: int = 24,
+        cols: int = 80,
+    ):
         if session_id is None:
             session_id = str(uuid.uuid4())
-        env = os.environ.copy()
+
+        extra_env: dict = {}
         if persona:
             instructions = (
                 f"Your name is {persona.name}. Your title is {persona.title}. {persona.instructions} "
@@ -119,27 +160,31 @@ class SessionManager:
                 "- '<voice>Found it! It was in the parser.</voice>' "
                 "NEVER send plain text greetings or explanations without <voice> tags. If you are speaking to the user, use <voice>."
             )
-            # Gemini CLI expects GEMINI_SYSTEM_MD to point to a file path, not the text directly.
             temp_path = f"/tmp/overseer_persona_{session_id}.md"
             try:
                 with open(temp_path, "w") as f:
                     f.write(instructions)
-                env["GEMINI_SYSTEM_MD"] = temp_path
+                extra_env["GEMINI_SYSTEM_MD"] = temp_path
                 logger.info(f"Created persona instructions at {temp_path}")
             except Exception as e:
                 logger.error(f"Failed to create temporary persona file: {e}")
-            
-        # Use command if provided, otherwise default to interactive shell
-        pty = PtyManager(cwd=cwd, env=env, command=command, rows=rows, cols=cols)
+
+        pty = PtyManager(
+            session_id=session_id,
+            command=command,
+            cwd=cwd,
+            extra_env=extra_env,
+            rows=rows,
+            cols=cols,
+        )
         pty.start()
-        
+
         metadata = SessionMetadata(
             id=session_id,
             name=name,
             cwd=cwd,
-            personaId=persona.id if persona else None
+            personaId=persona.id if persona else None,
         )
-        
         self.register(session_id, pty, metadata)
         return session_id
 
@@ -150,12 +195,10 @@ class SessionManager:
         session = self._sessions.pop(session_id, None)
         if session:
             session.stop()
-            # Clean up temporary persona file if it exists
             temp_path = f"/tmp/overseer_persona_{session_id}.md"
             if os.path.exists(temp_path):
                 try:
                     os.remove(temp_path)
-                    logger.info(f"Cleaned up temporary persona file at {temp_path}")
                 except Exception as e:
                     logger.error(f"Failed to delete temporary persona file {temp_path}: {e}")
 

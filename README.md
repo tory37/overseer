@@ -35,6 +35,16 @@ uvx --from git+https://github.com/USER/overseer overseer
 
 Overseer will start a local server (default: `http://127.0.0.1:8000`) and handle all PTY and session management locally for maximum security and speed.
 
+### Running on a Custom Port
+
+You can customize the host and port using command-line arguments:
+
+```bash
+uvx --from . overseer --port 8080 --host 0.0.0.0
+```
+
+This is particularly useful if you want to run a stable version while developing locally on the default port.
+
 ## Core Features
 
 ### 🛠 Git-Backed Task Isolation
