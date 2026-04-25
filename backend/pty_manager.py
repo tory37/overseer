@@ -1,79 +1,75 @@
 import os
 import shlex
 import shutil
+import subprocess
 import logging
-from collections import deque
 from ptyprocess import PtyProcess
 
 logger = logging.getLogger(__name__)
 
+
 class PtyManager:
-    def __init__(self, command: str = None, cwd: str = None, env: dict = None, use_shell: bool = True, rows: int = 24, cols: int = 80):
-        # Detect default shell
-        shell_executable = shutil.which(os.environ.get("SHELL", "bash")) or "/bin/bash"
-        
-        if not use_shell and command:
-            if isinstance(command, list):
-                args = command
-            else:
-                args = shlex.split(command)
-        # If no command or just requesting a shell, start an interactive shell
-        elif not command or command in ["/bin/bash", "/bin/zsh", "bash", "zsh"]:
-            args = [shell_executable, "-i"]
-        else:
-            # Wrap the command in the shell with -ic to source dotfiles
-            if isinstance(command, list):
-                command_str = shlex.join(command)
-            else:
-                command_str = command
-            args = [shell_executable, "-ic", command_str]
-            
-        self.command = args
+    _TMUX_PREFIX = "overseer"
+
+    def __init__(
+        self,
+        session_id: str,
+        command: str = None,
+        cwd: str = None,
+        extra_env: dict = None,
+        rows: int = 24,
+        cols: int = 80,
+    ):
+        self.session_id = session_id
+        self.tmux_name = f"{self._TMUX_PREFIX}-{session_id}"
         self.cwd = cwd or os.getcwd()
-        self.env = env
+        self.extra_env = extra_env or {}
         self.rows = rows
         self.cols = cols
-        self.process = None
-        self.buffer = deque(maxlen=50)
+        self.process: PtyProcess | None = None
+
+        shell = shutil.which(os.environ.get("SHELL", "bash")) or "/bin/bash"
+        if not command or command in ("/bin/bash", "/bin/zsh", "bash", "zsh"):
+            self._cmd_args = [shell, "-i"]
+        else:
+            cmd_str = shlex.join(command) if isinstance(command, list) else command
+            self._cmd_args = [shell, "-ic", cmd_str]
 
     def start(self):
-        logger.info(f"PtyManager: Starting command: {self.command}, in cwd: {self.cwd}, size: {self.rows}x{self.cols}")
-        if self.env:
-            path = self.env.get("PATH", "not set")
-            logger.debug(f"PtyManager: PATH in environment: {path}")
-        else:
-            logger.debug(f"PtyManager: environment not set, using default.")
-        
-        try:
-            self.process = PtyProcess.spawn(self.command, cwd=self.cwd, env=self.env, dimensions=(self.rows, self.cols))
-            logger.info(f"PtyManager: Process spawned with PID: {self.process.pid}")
-            
-            # Short check to see if it died immediately
-            import time
-            time.sleep(0.1)
-            if not self.process.isalive():
-                logger.warning(f"PtyManager: Process {self.process.pid} died immediately after spawning with exit status {self.process.exitstatus}")
-        except Exception as e:
-            logger.error(f"PtyManager: Failed to spawn process: {e}", exc_info=True)
-            raise
+        new_session_cmd = [
+            "tmux", "new-session",
+            "-d",
+            "-s", self.tmux_name,
+            "-x", str(self.cols),
+            "-y", str(self.rows),
+        ]
+        for key, val in self.extra_env.items():
+            new_session_cmd += ["-e", f"{key}={val}"]
+        new_session_cmd += self._cmd_args
 
-    def read(self, max_bytes: int = 1024) -> bytes:
-        if not self.process:
-            return b""
-        try:
-            data = self.process.read(max_bytes)
-            if data:
-                self.buffer.append(data)
-            return data
-        except EOFError:
-            logger.info(f"PtyManager: EOFError received from process {getattr(self.process, 'pid', 'unknown')}. Process likely terminated.")
-            return b""
-        except Exception as e:
-            logger.error(f"PtyManager: Error reading from process: {e}")
-            return b""
+        logger.info("PtyManager: tmux new-session: %s", new_session_cmd)
+        subprocess.run(new_session_cmd, check=True)
+        self._attach_pty()
+
+    def attach(self):
+        logger.info("PtyManager: attaching to existing tmux session %s", self.tmux_name)
+        self._attach_pty()
+
+    def _attach_pty(self):
+        attach_cmd = ["tmux", "attach-session", "-t", self.tmux_name]
+        self.process = PtyProcess.spawn(
+            attach_cmd,
+            dimensions=(self.rows, self.cols),
+        )
+
+    def get_buffer(self) -> bytes:
+        result = subprocess.run(
+            ["tmux", "capture-pane", "-t", self.tmux_name, "-p", "-S", "-5000", "-e"],
+            capture_output=True,
+        )
+        return result.stdout
 
     def read_raw(self, max_bytes: int = 1024) -> bytes:
-        """Read from the process without updating the internal buffer."""
         if not self.process:
             return b""
         try:
@@ -81,33 +77,29 @@ class PtyManager:
         except (EOFError, Exception):
             return b""
 
-    def append_to_buffer(self, data: bytes):
-        """Manually append data to the internal buffer."""
-        if data:
-            self.buffer.append(data)
-
-    def get_buffer(self) -> bytes:
-        return b"".join(self.buffer)
-
     def write(self, data: str):
         if self.process:
             self.process.write(data.encode())
 
     def resize(self, rows: int, cols: int):
+        self.rows = rows
+        self.cols = cols
         if self.process:
             self.process.setwinsize(rows, cols)
 
     def is_alive(self) -> bool:
         if self.process:
-            alive = self.process.isalive()
-            if not alive and self.process.exitstatus is not None:
-                logger.info(f"PtyManager: Process {self.process.pid} is not alive. Exit status: {self.process.exitstatus}, Signal: {self.process.signalstatus}")
-            return alive
+            return self.process.isalive()
         return False
 
     def stop(self):
+        subprocess.run(
+            ["tmux", "kill-session", "-t", self.tmux_name],
+            check=False,
+        )
         if self.process:
-            pid = self.process.pid
-            self.process.terminate(force=True)
-            self.process.wait() # Wait for the process to truly exit
-            logger.info(f"PtyManager: Process {pid} terminated. Exit status: {self.process.exitstatus}, Signal: {self.process.signalstatus}")
+            try:
+                self.process.terminate(force=True)
+            except Exception:
+                pass
+        logger.info("PtyManager: stopped session %s", self.tmux_name)
