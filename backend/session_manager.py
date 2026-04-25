@@ -109,7 +109,7 @@ class SessionManager:
         env = os.environ.copy()
         if persona:
             instructions = (
-                f"You are {persona.name}. {persona.instructions} "
+                f"Your name is {persona.name}. Your title is {persona.title}. {persona.instructions} "
                 "CRITICAL: ALL conversational speech, greetings, 'flair', personality interjections, or explanations MUST be wrapped in <voice> tags. "
                 "The ONLY things that should be OUTSIDE of <voice> tags are raw terminal commands, code, file paths, tree structures, or command logs. "
                 "Examples: "
