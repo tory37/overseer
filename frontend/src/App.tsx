@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PersonaLayout } from './components/PersonaLayout'
 import { NewSessionOverlay } from './components/NewSessionOverlay'
-import { getBaseUrl, createSession, type Persona, getPersonas } from './utils/api'
+import { getBaseUrl, createSession, deleteSession, type Persona, getPersonas } from './utils/api'
 
 interface Tab {
   id: string;
@@ -70,6 +70,15 @@ function App() {
     setIsLoaded(true)
   }
 
+  const handleDeleteSession = async (id: string) => {
+    try {
+      await deleteSession(id)
+    } catch (err) {
+      console.error('Failed to delete session:', err)
+    }
+    setTabs(prev => prev.filter(t => t.id !== id))
+  }
+
   return (
     <>
       <PersonaLayout
@@ -78,6 +87,7 @@ function App() {
         onPersonaCreated={() => getPersonas().then(setPersonas)}
         onNewSession={() => setIsCreatingSession(true)}
         onCloseSession={closeSession}
+        onDeleteSession={handleDeleteSession}
       />
       {isCreatingSession && (
         <NewSessionOverlay

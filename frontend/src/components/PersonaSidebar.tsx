@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ghost, Search, Settings, Terminal, Folder, Plus } from 'lucide-react';
+import { Ghost, Search, Settings, Terminal, Folder, Plus, Trash2 } from 'lucide-react';
 import type { Persona } from '../utils/api';
 import type { SpecialView } from './PersonaLayout';
 import { AgentAvatar } from './AgentAvatar';
@@ -15,12 +15,31 @@ export interface SessionData {
   type: string;
 }
 
-export const SessionItem = ({ title, isActive, onClick }: { title: string; isActive: boolean; onClick?: () => void }) => (
+export const SessionItem = ({
+  title,
+  isActive,
+  onClick,
+  onDelete,
+}: {
+  title: string;
+  isActive: boolean;
+  onClick?: () => void;
+  onDelete?: () => void;
+}) => (
   <div
     onClick={onClick}
-    className={`cursor-pointer px-2 py-1.5 rounded-md text-sm transition-colors ${isActive ? 'bg-blue-600/20 text-blue-300' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+    className={`group cursor-pointer px-2 py-1.5 rounded-md text-sm transition-colors flex items-center justify-between ${isActive ? 'bg-blue-600/20 text-blue-300' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'}`}
   >
-    {title}
+    <span className="truncate">{title}</span>
+    {onDelete && (
+      <button
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-900/40 hover:text-red-400 transition-all ml-1 shrink-0"
+        title="Delete session"
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
+    )}
   </div>
 );
 
@@ -30,12 +49,14 @@ const PersonaGroup = ({
   sessions,
   selectedSessionId,
   onSelectSession,
+  onDeleteSession,
 }: {
   name: string;
   avatarConfig: AvatarConfig;
   sessions: SessionData[];
   selectedSessionId: string | null;
   onSelectSession: (id: string) => void;
+  onDeleteSession?: (id: string) => void;
 }) => {
   const [expanded, setExpanded] = useState(true);
   return (
@@ -56,6 +77,7 @@ const PersonaGroup = ({
               title={session.name}
               isActive={session.id === selectedSessionId}
               onClick={() => onSelectSession(session.id)}
+              onDelete={onDeleteSession ? () => onDeleteSession(session.id) : undefined}
             />
           ))}
         </div>
@@ -72,6 +94,7 @@ interface PersonaSidebarProps {
   onSelectSession: (id: string) => void;
   onOpenSpecialView: (type: SpecialView) => void;
   onNewSession: () => void;
+  onDeleteSession?: (id: string) => void;
 }
 
 export const PersonaSidebar = ({
@@ -82,6 +105,7 @@ export const PersonaSidebar = ({
   onSelectSession,
   onOpenSpecialView,
   onNewSession,
+  onDeleteSession,
 }: PersonaSidebarProps) => {
   const agentSessions = sessions.filter(s => s.type === 'agent');
 
@@ -135,6 +159,7 @@ export const PersonaSidebar = ({
                 sessions={group.sessions}
                 selectedSessionId={selectedSessionId}
                 onSelectSession={onSelectSession}
+                onDeleteSession={onDeleteSession}
               />
             ))}
             {ungrouped.length > 0 && (
@@ -144,6 +169,7 @@ export const PersonaSidebar = ({
                 sessions={ungrouped}
                 selectedSessionId={selectedSessionId}
                 onSelectSession={onSelectSession}
+                onDeleteSession={onDeleteSession}
               />
             )}
             {agentSessions.length === 0 && (

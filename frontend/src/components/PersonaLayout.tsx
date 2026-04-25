@@ -25,6 +25,7 @@ interface PersonaLayoutProps {
   onPersonaCreated: () => void;
   onNewSession: () => void;
   onCloseSession: (id: string) => void;
+  onDeleteSession: (id: string) => void;
 }
 
 export const PersonaLayout: React.FC<PersonaLayoutProps> = ({
@@ -33,6 +34,7 @@ export const PersonaLayout: React.FC<PersonaLayoutProps> = ({
   onPersonaCreated,
   onNewSession,
   onCloseSession,
+  onDeleteSession,
 }) => {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [specialView, setSpecialView] = useState<SpecialView | null>(null);
@@ -73,6 +75,7 @@ export const PersonaLayout: React.FC<PersonaLayoutProps> = ({
         onSelectSession={handleSelectSession}
         onOpenSpecialView={handleOpenSpecialView}
         onNewSession={onNewSession}
+        onDeleteSession={onDeleteSession}
       />
       <main className="flex-1 overflow-hidden flex flex-col">
         {specialView === 'persona-studio' && <PersonaStudio onPersonaChanged={onPersonaCreated} />}
