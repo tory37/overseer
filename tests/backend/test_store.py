@@ -104,6 +104,17 @@ def test_update_persona_not_found(temp_store):
     with pytest.raises(ValueError, match="'ghost' not found"):
         store.update_persona("ghost", Persona(id="ghost", name="Ghost", title="Ghost", instructions="Boo."))
 
+def test_delete_persona_not_found(temp_store):
+    store = temp_store
+    with pytest.raises(ValueError, match="'ghost' not found"):
+        store.delete_persona("ghost")
+
+def test_update_persona_id_mismatch(temp_store):
+    store = temp_store
+    mismatched = Persona(id="different-id", name="X", title="X", instructions="X.")
+    with pytest.raises(ValueError, match="does not match"):
+        store.update_persona("senior", mismatched)
+
 def test_migration_old_name_to_title(tmp_path):
     old_data = {
         "personas": [

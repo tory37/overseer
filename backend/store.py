@@ -125,10 +125,17 @@ class Store:
         self.save()
 
     def delete_persona(self, persona_id: str):
+        original_count = len(self.config.personas)
         self.config.personas = [p for p in self.config.personas if p.id != persona_id]
+        if len(self.config.personas) == original_count:
+            raise ValueError(f"Persona '{persona_id}' not found.")
         self.save()
 
     def update_persona(self, persona_id: str, updated: Persona):
+        if updated.id != persona_id:
+            raise ValueError(
+                f"Persona body ID '{updated.id}' does not match URL ID '{persona_id}'."
+            )
         for i, p in enumerate(self.config.personas):
             if p.id == persona_id:
                 self.config.personas[i] = updated
