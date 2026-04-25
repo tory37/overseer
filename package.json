@@ -1,0 +1,13 @@
+{
+  "name": "agent-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Unified UI for managing multiple Gemini CLI agent instances",
+  "scripts": {
+    "release:run": "uvx --refresh --from git+https://github.com/tory37/overseer overseer --port 8001",
+    "release": "./release.sh",
+    "dev:backend": "./start_backend_dev.sh",
+    "dev:frontend": "./start_frontend_dev.sh",
+    "build": "cd frontend && npm install && npm run build && cd .. && rm -rf backend/static/* && cp -r frontend/dist/* backend/static/"
+  }
+}
