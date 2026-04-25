@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Plus, Terminal, Search, Folder, Zap, Globe, Cpu, Play } from 'lucide-react'
 import FileBrowser from './FileBrowser'
 import { getBaseUrl, type Persona } from '../utils/api'
+import { AgentAvatar } from './AgentAvatar'
 
 interface NewSessionOverlayProps {
   personas: Persona[]
@@ -132,20 +133,8 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
                         : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
                     }`}
                   >
-                    <div className="w-12 h-12 rounded-full mb-2 overflow-hidden flex items-center justify-center bg-blue-500/20 border border-blue-500/30">
-                      <img 
-                        src={`/assets/avatars/${persona.avatarId}.svg`} 
-                        alt={persona.name} 
-                        className="w-full h-full object-cover" 
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          const fallback = (e.target as HTMLImageElement).parentElement?.querySelector('.avatar-fallback') as HTMLElement;
-                          if (fallback) fallback.style.display = 'flex';
-                        }}
-                      />
-                      <div className="avatar-fallback hidden w-full h-full items-center justify-center text-blue-400 font-bold text-xl">
-                        {persona.name.charAt(0)}
-                      </div>
+                    <div className="mb-2">
+                      <AgentAvatar avatarConfig={persona.avatarConfig} size={48} />
                     </div>
                     <p className="font-bold text-sm">{persona.name}</p>
                   </div>

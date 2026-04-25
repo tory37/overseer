@@ -14,6 +14,7 @@ interface TabContainerProps {
   personaId?: string | null
   personas: Persona[]
   onPersonaCreated?: () => void
+  onClose?: () => void
 }
 
 export interface VoiceMessage {
@@ -30,6 +31,7 @@ export const TabContainer = ({
   personaId,
   personas,
   onPersonaCreated,
+  // onClose,
 }: TabContainerProps) => {
   // Only track the single latest voice message — mascot picks it up
   const [latestVoice, setLatestVoice] = useState<VoiceMessage | null>(null)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Ghost, Search, Settings, Terminal, Folder, Plus, Trash2 } from 'lucide-react';
 import type { Persona } from '../utils/api';
 import type { SpecialView } from './PersonaLayout';

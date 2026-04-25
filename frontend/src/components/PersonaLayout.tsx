@@ -95,6 +95,7 @@ export const PersonaLayout: React.FC<PersonaLayoutProps> = ({
             personaId={selectedSession.personaId}
             personas={personas}
             onPersonaCreated={onPersonaCreated}
+            onClose={() => onCloseSession(selectedSession.id)}
           />
         )}
         {!specialView && !selectedSession && (

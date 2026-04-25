@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Persona } from '../utils/api';
-import { createPersona, getPersonas } from '../utils/api';
+import { createPersona, getPersonas, DEFAULT_AVATAR_CONFIG } from '../utils/api';
 import { Ghost, CheckCircle, XCircle } from 'lucide-react'; // Importing icons for success/error
 
 interface PersonaLabProps {
@@ -11,8 +11,9 @@ export const PersonaLab: React.FC<PersonaLabProps> = ({ onCreated }) => {
     const [persona, setPersona] = useState<Persona>({
         id: '',
         name: '',
+        title: '',
         instructions: '',
-        avatarId: '',
+        avatarConfig: DEFAULT_AVATAR_CONFIG,
     });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -29,8 +30,8 @@ export const PersonaLab: React.FC<PersonaLabProps> = ({ onCreated }) => {
 
         try {
             // Basic validation
-            if (!persona.id || !persona.name || !persona.instructions || !persona.avatarId) {
-                throw new Error('All fields are required.');
+            if (!persona.id || !persona.instructions) {
+                throw new Error('ID and Instructions are required.');
             }
 
             // Client-side validation for ID uniqueness
@@ -43,7 +44,13 @@ export const PersonaLab: React.FC<PersonaLabProps> = ({ onCreated }) => {
             await createPersona(persona);
             setMessage({ type: 'success', text: 'Persona created successfully!' });
             // Clear form after successful submission
-            setPersona({ id: '', name: '', instructions: '', avatarId: '' });
+            setPersona({ 
+                id: '', 
+                name: '', 
+                title: '',
+                instructions: '', 
+                avatarConfig: DEFAULT_AVATAR_CONFIG 
+            });
             
             // Trigger callback if provided
             if (onCreated) {
@@ -65,30 +72,43 @@ export const PersonaLab: React.FC<PersonaLabProps> = ({ onCreated }) => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label htmlFor="id" className="block text-xs font-semibold text-slate-400 mb-1">ID</label>
-                    <input
-                        type="text"
-                        id="id"
-                        name="id"
-                        value={persona.id}
-                        onChange={handleChange}
-                        className="w-full bg-slate-900/50 border border-slate-800 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        placeholder="unique-persona-id"
-                        required
-                    />
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="id" className="block text-xs font-semibold text-slate-400 mb-1">ID</label>
+                        <input
+                            type="text"
+                            id="id"
+                            name="id"
+                            value={persona.id}
+                            onChange={handleChange}
+                            className="w-full bg-slate-900/50 border border-slate-800 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            placeholder="unique-persona-id"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="name" className="block text-xs font-semibold text-slate-400 mb-1">Name</label>
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            value={persona.name}
+                            onChange={handleChange}
+                            className="w-full bg-slate-900/50 border border-slate-800 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            placeholder="Walt"
+                        />
+                    </div>
                 </div>
                 <div>
-                    <label htmlFor="name" className="block text-xs font-semibold text-slate-400 mb-1">Name</label>
+                    <label htmlFor="title" className="block text-xs font-semibold text-slate-400 mb-1">Title</label>
                     <input
                         type="text"
-                        id="name"
-                        name="name"
-                        value={persona.name}
+                        id="title"
+                        name="title"
+                        value={persona.title}
                         onChange={handleChange}
                         className="w-full bg-slate-900/50 border border-slate-800 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        placeholder="Friendly AI"
-                        required
+                        placeholder="The Senior"
                     />
                 </div>
                 <div>
@@ -103,20 +123,6 @@ export const PersonaLab: React.FC<PersonaLabProps> = ({ onCreated }) => {
                         placeholder="You are a helpful AI assistant..."
                         required
                     ></textarea>
-                </div>
-                <div>
-                    <label htmlFor="avatarId" className="block text-xs font-semibold text-slate-400 mb-1">Avatar ID</label>
-                    <p className="text-xs text-slate-500 mb-2">Enter a unique ID, like 'robot-1'. This ID should correspond to an image named `robot-1.png` in the `/assets/avatars/` directory.</p>
-                    <input
-                        type="text"
-                        id="avatarId"
-                        name="avatarId"
-                        value={persona.avatarId}
-                        onChange={handleChange}
-                        className="w-full bg-slate-900/50 border border-slate-800 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        placeholder="default-avatar"
-                        required
-                    />
                 </div>
 
                 <button

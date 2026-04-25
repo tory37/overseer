@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import type { Persona } from '../utils/api';
 import { getPersonas, createPersona, updatePersona, deletePersona } from '../utils/api';
 import type { AvatarConfig } from '../utils/api';
