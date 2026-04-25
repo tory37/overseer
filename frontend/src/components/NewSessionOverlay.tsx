@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Terminal, Search, Folder, Zap, Globe, Cpu, Play, Check, AlertCircle } from 'lucide-react'
+import { X, Terminal, Search, Folder, Play, Check, AlertCircle } from 'lucide-react'
 import FileBrowser from './FileBrowser'
 import { getBaseUrl, type Persona, type Skill, getSkills } from '../utils/api'
 import { AgentAvatar } from './AgentAvatar'
@@ -44,7 +44,6 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
   }, []);
 
   const handleLaunch = () => {
-    const selectedPersona = personas.find(p => p.id === selectedPersonaId);
     onLaunch("New Session", selectedPath, selectedCommand, selectedPersonaId, selectedSkills)
   }
 
@@ -153,7 +152,7 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
                       }`}
                     >
                       <AgentAvatar 
-                        config={persona.avatarConfig} 
+                        avatarConfig={persona.avatarConfig} 
                         className={`w-10 h-10 ${selectedPersonaId === persona.id ? '' : 'grayscale opacity-50'}`} 
                       />
                       <div className="flex-1 min-w-0">
@@ -163,7 +162,7 @@ export const NewSessionOverlay = ({ personas, onClose, onLaunch }: NewSessionOve
                           </p>
                           {selectedPersonaId === persona.id && <Check className="w-4 h-4 text-blue-500" />}
                         </div>
-                        <p className="text-[10px] text-slate-500 truncate">{persona.role}</p>
+                        <p className="text-[10px] text-slate-500 truncate">{persona.title}</p>
                       </div>
                     </button>
                   ))}

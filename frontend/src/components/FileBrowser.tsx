@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Folder, File, ChevronLeft, ChevronRight, Home, Check } from 'lucide-react';
+import { Folder, File, ChevronRight, Home, Check } from 'lucide-react';
 import { getBaseUrl } from '../utils/api';
 
 interface FileSystemEntry {

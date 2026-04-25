@@ -9,6 +9,7 @@ interface AgentAvatarProps {
   state?: 'idle' | 'talking' | 'thinking';
   talkingUntil?: number;
   size?: number;
+  className?: string;
 }
 
 export const AgentAvatar: React.FC<AgentAvatarProps> = ({
@@ -16,6 +17,7 @@ export const AgentAvatar: React.FC<AgentAvatarProps> = ({
   state = 'idle',
   talkingUntil = 0,
   size = 40,
+  className = '',
 }) => {
   const [mouthVariant, setMouthVariant] = useState(avatarConfig.mouth);
 
@@ -59,6 +61,7 @@ export const AgentAvatar: React.FC<AgentAvatarProps> = ({
 
   return (
     <motion.div
+      className={className}
       animate={state === 'thinking' ? { opacity: [0.6, 1, 0.6] } : { y: [0, -2, 0] }}
       transition={{
         duration: state === 'thinking' ? 1.2 : 3,
