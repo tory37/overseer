@@ -7,9 +7,9 @@ from pydantic import BaseModel
 CONFIG_PATH = Path.home() / ".overseer.json"
 
 BUILTIN_AVATAR_CONFIGS = {
-    "senior": {"eyes": "variant09", "mouth": "variant14", "hair": "short01", "skinColor": "f5cba7", "hairColor": "6b6b6b", "backgroundColor": "1e293b"},
-    "intern": {"eyes": "variant01", "mouth": "variant04", "hair": "short02", "skinColor": "fcd5b0", "hairColor": "8b4513", "backgroundColor": "0f172a"},
-    "cyberpunk": {"eyes": "variant06", "mouth": "variant09", "hair": "mohawk01", "skinColor": "d4a574", "hairColor": "00ff88", "backgroundColor": "0a0a0f"},
+    "senior": {"eyes": "variant09", "mouth": "variant14", "hair": "short01", "skinColor": "f5cba7", "hairColor": "6b6b6b", "backgroundColor": "1e293b", "clothingColor": "4a5568"},
+    "intern": {"eyes": "variant01", "mouth": "variant04", "hair": "short02", "skinColor": "fcd5b0", "hairColor": "8b4513", "backgroundColor": "0f172a", "clothingColor": "5bc0de"},
+    "cyberpunk": {"eyes": "variant06", "mouth": "variant09", "hair": "mohawk01", "skinColor": "d4a574", "hairColor": "00ff88", "backgroundColor": "0a0a0f", "clothingColor": "00ff88"},
 }
 
 class Repo(BaseModel):
@@ -25,10 +25,12 @@ class AvatarConfig(BaseModel):
     skinColor: str = "fcd5b0"
     hairColor: str = "6b3a2a"
     backgroundColor: str = "1e293b"
+    clothingColor: str = "5bc0de"
 
 class Persona(BaseModel):
     id: str
-    name: str
+    name: str = ""
+    title: str = ""
     instructions: str
     avatarConfig: AvatarConfig = AvatarConfig()
 
@@ -53,21 +55,24 @@ class Config(BaseModel):
     personas: List[Persona] = [
         Persona(
             id="senior",
-            name="The Senior",
+            name="Walt",
+            title="The Senior",
             instructions="You are a grumpy senior engineer. Be brief, cynical, and obsessed with DRY and clean code.",
-            avatarConfig=AvatarConfig(eyes="variant09", mouth="variant14", hair="short01", skinColor="f5cba7", hairColor="6b6b6b", backgroundColor="1e293b"),
+            avatarConfig=AvatarConfig(eyes="variant09", mouth="variant14", hair="short01", skinColor="f5cba7", hairColor="6b6b6b", backgroundColor="1e293b", clothingColor="4a5568"),
         ),
         Persona(
             id="intern",
-            name="The Intern",
+            name="Tyler",
+            title="The Intern",
             instructions="You are an over-eager intern. Use lots of emojis and be very enthusiastic about learning.",
-            avatarConfig=AvatarConfig(eyes="variant01", mouth="variant04", hair="short02", skinColor="fcd5b0", hairColor="8b4513", backgroundColor="0f172a"),
+            avatarConfig=AvatarConfig(eyes="variant01", mouth="variant04", hair="short02", skinColor="fcd5b0", hairColor="8b4513", backgroundColor="0f172a", clothingColor="5bc0de"),
         ),
         Persona(
             id="cyberpunk",
-            name="The Cyber-Punk",
+            name="Nyx",
+            title="The Cyber-Punk",
             instructions="You are a cynical netrunner. Use glitchy metaphors and treat coding like a battlefield.",
-            avatarConfig=AvatarConfig(eyes="variant06", mouth="variant09", hair="mohawk01", skinColor="d4a574", hairColor="00ff88", backgroundColor="0a0a0f"),
+            avatarConfig=AvatarConfig(eyes="variant06", mouth="variant09", hair="mohawk01", skinColor="d4a574", hairColor="00ff88", backgroundColor="0a0a0f", clothingColor="00ff88"),
         ),
     ]
 
@@ -81,14 +86,18 @@ class Store:
         try:
             with open(CONFIG_PATH, "r") as f:
                 data = json.load(f)
-            # Migrate old avatarId format to avatarConfig
             if "personas" in data:
                 for persona in data["personas"]:
+                    # Migrate old avatarId format
                     if "avatarId" in persona:
                         if "avatarConfig" not in persona:
                             builtin = BUILTIN_AVATAR_CONFIGS.get(persona["id"])
                             persona["avatarConfig"] = builtin if builtin else {}
                         del persona["avatarId"]
+                    # Migrate old name-only format: name → title, name → ""
+                    if "title" not in persona and "name" in persona:
+                        persona["title"] = persona["name"]
+                        persona["name"] = ""
             return Config(**data)
         except Exception as e:
             print(f"Error loading config: {e}")
@@ -97,7 +106,7 @@ class Store:
     def save(self):
         try:
             with open(CONFIG_PATH, "w") as f:
-                json.dump(self.config.dict(), f, indent=2)
+                json.dump(self.config.model_dump(), f, indent=2)
         except Exception as e:
             print(f"Error saving config: {e}")
 
@@ -115,6 +124,18 @@ class Store:
         self.config.personas.append(persona)
         self.save()
 
+    def delete_persona(self, persona_id: str):
+        self.config.personas = [p for p in self.config.personas if p.id != persona_id]
+        self.save()
+
+    def update_persona(self, persona_id: str, updated: Persona):
+        for i, p in enumerate(self.config.personas):
+            if p.id == persona_id:
+                self.config.personas[i] = updated
+                self.save()
+                return
+        raise ValueError(f"Persona '{persona_id}' not found.")
+
     def update_sessions(self, sessions: List[SessionTab]):
         self.config.sessions = sessions
         self.save()
@@ -126,4 +147,4 @@ class Store:
         return None
 
     def get_all(self) -> Dict[str, Any]:
-        return self.config.dict()
+        return self.config.model_dump()
