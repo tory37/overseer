@@ -13,6 +13,7 @@ export interface AvatarConfig {
   skinColor: string;
   hairColor: string;
   backgroundColor: string;
+  clothingColor: string;
 }
 
 export const DEFAULT_AVATAR_CONFIG: AvatarConfig = {
@@ -22,11 +23,13 @@ export const DEFAULT_AVATAR_CONFIG: AvatarConfig = {
   skinColor: 'fcd5b0',
   hairColor: '6b3a2a',
   backgroundColor: '1e293b',
+  clothingColor: '5bc0de',
 };
 
 export interface Persona {
   id: string;
   name: string;
+  title: string;
   instructions: string;
   avatarConfig: AvatarConfig;
 }
