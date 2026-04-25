@@ -69,7 +69,7 @@ def test_avatar_config_defaults():
     from backend.store import AvatarConfig
     config = AvatarConfig()
     assert config.eyes == "variant01"
-    assert config.mouth == "variant04"
+    assert config.mouth == "happy04"
     assert config.hair == "short01"
     assert config.skinColor == "fcd5b0"
     assert config.hairColor == "6b3a2a"
