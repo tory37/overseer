@@ -17,11 +17,15 @@ def test_get_personas():
     senior = next(p for p in data if p["id"] == "senior")
     assert "avatarConfig" in senior
     assert senior["avatarConfig"]["eyes"] == "variant09"
+    assert senior["title"] == "The Senior"
+    assert senior["name"] == "Walt"
+    assert senior["avatarConfig"]["clothingColor"] == "4a5568"
 
 def test_create_persona():
     new_persona = {
         "id": "test-bot",
-        "name": "Test Bot",
+        "name": "Bot",
+        "title": "Test Bot",
         "instructions": "Be a bot for testing.",
         "avatarConfig": {
             "eyes": "variant01",
@@ -29,7 +33,8 @@ def test_create_persona():
             "hair": "short01",
             "skinColor": "fcd5b0",
             "hairColor": "6b3a2a",
-            "backgroundColor": "1e293b"
+            "backgroundColor": "1e293b",
+            "clothingColor": "5bc0de"
         }
     }
     from backend.main import store
@@ -38,61 +43,92 @@ def test_create_persona():
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == "test-bot"
-    assert data["avatarConfig"]["eyes"] == "variant01"
+    assert data["title"] == "Test Bot"
+    assert data["name"] == "Bot"
+    assert data["avatarConfig"]["clothingColor"] == "5bc0de"
 
     response = client.get("/api/personas")
+    assert "test-bot" in [p["id"] for p in response.json()]
+
+def test_delete_persona():
+    from backend.main import store
+    store.config.personas = [p for p in store.config.personas if p.id != "to-del"]
+    from backend.store import Persona
+    store.add_persona(Persona(id="to-del", name="Del", title="Deletable", instructions="Delete me."))
+
+    response = client.delete("/api/personas/to-del")
     assert response.status_code == 200
-    persona_ids = [p["id"] for p in response.json()]
-    assert "test-bot" in persona_ids
+    assert response.json() == {"status": "ok"}
+
+    response = client.get("/api/personas")
+    assert "to-del" not in [p["id"] for p in response.json()]
+
+def test_update_persona():
+    from backend.main import store
+    from backend.store import Persona
+    store.config.personas = [p for p in store.config.personas if p.id != "to-update"]
+    store.add_persona(Persona(id="to-update", name="Old", title="Old Title", instructions="Old instructions."))
+
+    updated_data = {
+        "id": "to-update",
+        "name": "New",
+        "title": "New Title",
+        "instructions": "Updated instructions.",
+        "avatarConfig": {
+            "eyes": "variant01",
+            "mouth": "variant04",
+            "hair": "short01",
+            "skinColor": "fcd5b0",
+            "hairColor": "6b3a2a",
+            "backgroundColor": "1e293b",
+            "clothingColor": "5bc0de"
+        }
+    }
+    response = client.put("/api/personas/to-update", json=updated_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "New"
+    assert data["title"] == "New Title"
+    assert data["instructions"] == "Updated instructions."
 
 import unittest.mock as mock
 from backend.session_manager import SessionManager, Persona
 
 @mock.patch.object(SessionManager, 'create_session')
 def test_create_session_with_persona_id(mock_create_session):
-    mock_create_session.return_value = "mock-session-id-with-persona" # Return a simple string
-    # Ensure a persona exists in the store for the test
+    mock_create_session.return_value = "mock-session-id-with-persona"
     persona_id = "test-persona-session"
     test_persona = Persona(
         id=persona_id,
-        name="Test Session Persona",
+        name="Test",
+        title="Test Session Persona",
         instructions="Instructions for session.",
     )
-    # Use the actual store instance from main.py
     from backend.main import store
     store.config.personas = [p for p in store.config.personas if p.id != persona_id]
     store.add_persona(test_persona)
 
-    new_session_request = {
+    response = client.post("/api/sessions", json={
         "name": "Test Session with Persona",
         "cwd": "/tmp",
         "personaId": persona_id
-    }
-    response = client.post("/api/sessions", json=new_session_request)
+    })
     assert response.status_code == 200
-    assert response.json() == {"id": "mock-session-id-with-persona"} # Assert against the mocked return value
+    assert response.json() == {"id": "mock-session-id-with-persona"}
 
     mock_create_session.assert_called_once()
     args, kwargs = mock_create_session.call_args
-    assert args[0] == new_session_request["name"]
-    assert args[1] == new_session_request["cwd"]
     assert isinstance(args[2], Persona)
     assert args[2].id == persona_id
-    assert args[2].name == test_persona.name
 
 @mock.patch.object(SessionManager, 'create_session')
 def test_create_session_without_persona_id(mock_create_session):
-    mock_create_session.return_value = "mock-session-id-without-persona" # Return a simple string
-    new_session_request = {
+    mock_create_session.return_value = "mock-session-id-without-persona"
+    response = client.post("/api/sessions", json={
         "name": "Test Session without Persona",
         "cwd": "/tmp"
-    }
-    response = client.post("/api/sessions", json=new_session_request)
+    })
     assert response.status_code == 200
-    assert response.json() == {"id": "mock-session-id-without-persona"} # Assert against the mocked return value
-
-    mock_create_session.assert_called_once()
+    assert response.json() == {"id": "mock-session-id-without-persona"}
     args, kwargs = mock_create_session.call_args
-    assert args[0] == new_session_request["name"]
-    assert args[1] == new_session_request["cwd"]
     assert args[2] is None

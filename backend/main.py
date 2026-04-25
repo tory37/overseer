@@ -79,6 +79,22 @@ async def create_persona(persona: Persona):
     store.add_persona(persona)
     return persona
 
+@app.delete("/api/personas/{persona_id}")
+async def delete_persona(persona_id: str):
+    try:
+        store.delete_persona(persona_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return {"status": "ok"}
+
+@app.put("/api/personas/{persona_id}")
+async def update_persona(persona_id: str, persona: Persona):
+    try:
+        store.update_persona(persona_id, persona)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return persona
+
 @app.put("/api/sessions")
 async def update_sessions(sessions: List[SessionTab]):
     old_ids = {s.id for s in store.config.sessions}
