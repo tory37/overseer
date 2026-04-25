@@ -127,3 +127,13 @@ export const deletePersona = async (id: string): Promise<void> => {
     throw new Error(errorData.detail || `Error deleting persona: ${response.statusText}`);
   }
 };
+
+export const deleteSession = async (id: string): Promise<void> => {
+  const response = await fetch(`${getBaseUrl()}/api/sessions/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || `Error deleting session: ${response.statusText}`);
+  }
+};

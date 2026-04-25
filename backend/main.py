@@ -13,6 +13,7 @@ from .store import Store, Repo, Group, SessionTab, Persona
 from .git_utils import GitManager
 from backend.file_system_api import list_directory_contents
 from pydantic import BaseModel
+import shutil
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -39,6 +40,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def on_startup():
+    if not shutil.which("tmux"):
+        logger.error(
+            "tmux is required but not found. "
+            "Install with: sudo apt install tmux"
+        )
+        raise SystemExit(1)
+    stored_sessions = store.config.sessions
+    session_manager.startup_discover(stored_sessions)
 
 @app.get("/health")
 async def health():
@@ -107,6 +119,15 @@ async def update_sessions(sessions: List[SessionTab]):
         session_manager.unregister(sid)
         
     store.update_sessions(sessions)
+    return {"status": "ok"}
+
+@app.delete("/api/sessions/{session_id}")
+async def delete_session_endpoint(session_id: str):
+    stored = next((s for s in store.config.sessions if s.id == session_id), None)
+    if not stored and not session_manager.get_session(session_id):
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+    session_manager.unregister(session_id)
+    store.delete_session(session_id)
     return {"status": "ok"}
 
 @app.post("/api/repos")
