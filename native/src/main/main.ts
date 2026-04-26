@@ -42,10 +42,10 @@ app.on('activate', () => {
 });
 
 // IPC Handlers for PTY
-ipcMain.on('pty-create', (event, { id, shell, cwd }) => {
+ipcMain.on('pty-create', (event, { id, shell, cwd, persona }) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) {
-    ptyManager.createSession(id, shell || '/bin/bash', cwd || process.env.HOME || '/', win);
+    ptyManager.createSession(id, shell || '/bin/bash', cwd || process.env.HOME || '/', win, persona);
   }
 });
 
