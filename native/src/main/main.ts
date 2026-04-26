@@ -3,7 +3,7 @@ import * as path from 'path';
 import isDev from 'electron-is-dev';
 import { PtyManager } from './pty-manager';
 import { setupAdapters } from './adapter-manager';
-import { loadPersonas } from './store'; // Import loadPersonas
+import { loadPersonas, type CliType, type CursorMode } from './store';
 import './store'; // Register store IPC handlers
 import './skills-manager'; // Register skills IPC handlers
 import './agents-manager'; // Register agents IPC handlers
@@ -49,23 +49,60 @@ app.on('activate', () => {
   }
 });
 
-// IPC Handlers for PTY
-ipcMain.on('pty-create', (event, { id, shell, cwd, persona: personaId }) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  if (win) {
-    let personaInstructions = personaId;
-
-    // If personaId is provided, try to resolve it to instructions
-    if (personaId) {
-      const personas = loadPersonas();
-      const persona = personas.find(p => p.id === personaId);
-      if (persona) {
-        personaInstructions = persona.instructions;
-      }
+function getLaunchCommand(
+  cliType: CliType | undefined,
+  yoloMode: boolean | undefined,
+  allowedTools: string | undefined,
+  cursorMode: CursorMode | undefined,
+  agentSessionId: string | undefined,
+): string {
+  const resume = !!agentSessionId;
+  switch (cliType) {
+    case 'gemini': {
+      let cmd = resume ? `gemini --resume ${agentSessionId}` : 'gemini';
+      if (yoloMode) cmd += ' --approval-mode yolo';
+      return cmd;
     }
-
-    ptyManager.createSession(id, shell || '/bin/bash', cwd || process.env.HOME || '/', win, personaInstructions);
+    case 'claude': {
+      let cmd = resume ? `claude --resume ${agentSessionId}` : 'claude';
+      if (allowedTools) cmd += ` --allowedTools "${allowedTools}"`;
+      return cmd;
+    }
+    case 'cursor-agent': {
+      let cmd = resume ? `cursor-agent resume ${agentSessionId}` : 'cursor-agent';
+      if (cursorMode) cmd += ` --mode ${cursorMode}`;
+      if (yoloMode) cmd += ' --yolo';
+      return cmd;
+    }
+    default:
+      return '/bin/bash';
   }
+}
+
+// IPC Handlers for PTY
+ipcMain.on('pty-create', (event, {
+  id, cwd, persona: personaId,
+  cliType, yoloMode, allowedTools, cursorMode, agentSessionId
+}) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+
+  let personaInstructions = personaId;
+  if (personaId) {
+    const personas = loadPersonas();
+    const persona = personas.find(p => p.id === personaId);
+    if (persona) personaInstructions = persona.instructions;
+  }
+
+  const launchCmd = getLaunchCommand(
+    cliType as CliType | undefined,
+    yoloMode,
+    allowedTools,
+    cursorMode as CursorMode | undefined,
+    agentSessionId,
+  );
+
+  ptyManager.createSession(id, launchCmd, cwd || process.env.HOME || '/', win, personaInstructions);
 });
 
 ipcMain.on('pty-write', (event, { id, data }) => {

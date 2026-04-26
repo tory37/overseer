@@ -13,17 +13,6 @@ import './index.css';
 
 const { ipcRenderer } = window.require('electron');
 
-function buildCliCommand(cliType: CliType, yoloMode: boolean, allowedTools: string, cursorMode: CursorMode): string {
-  switch (cliType) {
-    case 'gemini':
-      return yoloMode ? 'gemini --approval-mode yolo' : 'gemini';
-    case 'claude':
-      return allowedTools ? `claude --allowedTools "${allowedTools}"` : 'claude';
-    case 'cursor-agent':
-      return `cursor-agent --mode ${cursorMode}${yoloMode ? ' --yolo' : ''}`;
-  }
-}
-
 interface Session {
   id: string;
   name: string;
@@ -124,13 +113,6 @@ const App = () => {
     setActiveId(id);
     setShowLaunchOverlay(null);
     setView('terminal');
-
-    // Temporary: send CLI command via pty-write after Terminal mounts.
-    // Task 4 will replace this by having pty-create spawn the CLI directly.
-    setTimeout(() => {
-      const command = buildCliCommand(config.cliType, config.yoloMode, config.allowedTools, config.cursorMode);
-      if (command) ipcRenderer.send('pty-write', { id, data: `${command}\r` });
-    }, 500);
   };
 
   const handleArchiveSession = (id: string) => {
@@ -222,15 +204,23 @@ const App = () => {
         <main className="flex-1 relative overflow-hidden">
           {view === 'terminal' ? (
             <div className="h-full p-4">
-              {activeId && (
-                <Terminal 
-                  key={activeId} 
-                  id={activeId} 
-                  cwd={sessions.find(s => s.id === activeId)?.cwd} 
-                  persona={sessions.find(s => s.id === activeId)?.persona}
-                  onVoice={setVoiceText}
-                />
-              )}
+              {activeId && (() => {
+                const s = sessions.find(sess => sess.id === activeId);
+                return (
+                  <Terminal
+                    key={activeId}
+                    id={activeId}
+                    cwd={s?.cwd}
+                    persona={s?.persona}
+                    cliType={s?.cliType}
+                    yoloMode={s?.yoloMode}
+                    allowedTools={s?.allowedTools}
+                    cursorMode={s?.cursorMode}
+                    agentSessionId={s?.agentSessionId}
+                    onVoice={setVoiceText}
+                  />
+                );
+              })()}
             </div>
           ) : view === 'studio' ? (
             <PersonaStudio />

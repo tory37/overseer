@@ -17,7 +17,7 @@ const ID_PATTERNS: Record<string, RegExp> = {
 export class PtyManager {
   private sessions: Map<string, pty.IPty> = new Map();
 
-  createSession(id: string, shell: string, cwd: string, window: BrowserWindow, persona?: string) {
+  createSession(id: string, command: string, cwd: string, window: BrowserWindow, persona?: string) {
     const skillsPath = path.join(os.homedir(), '.overseer', 'skills');
     const agentsPath = path.join(os.homedir(), '.overseer', 'agents');
     const binPath = getOverseerBinDir();
@@ -40,7 +40,8 @@ export class PtyManager {
       CLAUDE_SYSTEM_PROMPT_FILE: briefPath, // Supported by our wrapper
     } as any;
 
-    const ptyProcess = pty.spawn(shell, [], {
+    const [bin, ...args] = command.split(' ');
+    const ptyProcess = pty.spawn(bin, args, {
       name: 'xterm-color',
       cols: 80,
       rows: 24,
