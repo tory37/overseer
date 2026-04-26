@@ -1,6 +1,9 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import isDev from 'electron-is-dev';
+import { PtyManager } from './pty-manager';
+
+const ptyManager = new PtyManager();
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -35,4 +38,24 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+});
+
+// IPC Handlers for PTY
+ipcMain.on('pty-create', (event, { id, shell, cwd }) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    ptyManager.createSession(id, shell || '/bin/bash', cwd || process.env.HOME || '/', win);
+  }
+});
+
+ipcMain.on('pty-write', (event, { id, data }) => {
+  ptyManager.write(id, data);
+});
+
+ipcMain.on('pty-resize', (event, { id, cols, rows }) => {
+  ptyManager.resize(id, cols, rows);
+});
+
+ipcMain.on('pty-kill', (event, { id }) => {
+  ptyManager.kill(id);
 });
