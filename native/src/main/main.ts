@@ -2,9 +2,15 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import isDev from 'electron-is-dev';
 import { PtyManager } from './pty-manager';
+import { setupAdapters } from './adapter-manager';
 import './store'; // Register store IPC handlers
+import './skills-manager'; // Register skills IPC handlers
+import './agents-manager'; // Register agents IPC handlers
 
 const ptyManager = new PtyManager();
+
+// Setup adapters on startup
+setupAdapters();
 
 function createWindow() {
   const win = new BrowserWindow({

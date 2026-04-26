@@ -1,27 +1,34 @@
 import * as pty from 'node-pty';
 import { BrowserWindow } from 'electron';
 import { getOrCreateBrief } from './briefing-engine';
+import { getOverseerBinDir } from './adapter-manager';
 import path from 'path';
+import os from 'os';
 
 export class PtyManager {
   private sessions: Map<string, pty.IPty> = new Map();
 
   createSession(id: string, shell: string, cwd: string, window: BrowserWindow, persona?: string) {
-    // Default library path for now - we'll make this configurable later
-    const libraryPath = path.join(process.env.HOME || '/', '.overseer', 'skills');
+    const skillsPath = path.join(os.homedir(), '.overseer', 'skills');
+    const agentsPath = path.join(os.homedir(), '.overseer', 'agents');
+    const binPath = getOverseerBinDir();
 
     const briefPath = getOrCreateBrief(id, { 
       persona, 
-      libraryPath 
+      skillsPath,
+      agentsPath
     });
 
     // Injected environment
     const env = { 
       ...process.env,
+      PATH: `${binPath}${path.delimiter}${process.env.PATH}`,
       OVERSEER_HUB: 'true',
       OVERSEER_BRIEF: briefPath,
+      OVERSEER_SKILLS_DIR: skillsPath,
+      OVERSEER_AGENTS_DIR: agentsPath,
       GEMINI_SYSTEM_MD: briefPath, // For Gemini CLI
-      CLAUDE_SYSTEM_PROMPT_FILE: briefPath, // Hypothetical or for custom wrappers
+      CLAUDE_SYSTEM_PROMPT_FILE: briefPath, // Supported by our wrapper
     } as any;
 
     const ptyProcess = pty.spawn(shell, [], {

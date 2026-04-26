@@ -4,7 +4,8 @@ import { Terminal } from './components/Terminal';
 import { Sidebar } from './components/Sidebar';
 import { MascotFrame } from './components/MascotFrame';
 import { PersonaStudio } from './components/PersonaStudio';
-import { Settings, Terminal as TerminalIcon } from 'lucide-react';
+import { ResourceLibrary } from './components/ResourceLibrary';
+import { Settings, Terminal as TerminalIcon, Zap, Bot } from 'lucide-react';
 import './index.css';
 
 const { ipcRenderer } = window.require('electron');
@@ -20,7 +21,7 @@ const App = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [voiceText, setVoiceText] = useState<string>('');
-  const [view, setView] = useState<'terminal' | 'studio'>('terminal');
+  const [view, setView] = useState<'terminal' | 'studio' | 'skills' | 'agents'>('terminal');
 
   useEffect(() => {
     const init = async () => {
@@ -88,6 +89,20 @@ const App = () => {
             <TerminalIcon size={20} />
           </button>
           <button 
+            onClick={() => setView('skills')}
+            title="Skill Library"
+            className={`flex-1 flex items-center justify-center p-2.5 rounded-xl transition-all ${view === 'skills' ? 'bg-[#33467C] text-white shadow-lg' : 'text-[#565f89] hover:bg-[#33467C]/30 hover:text-[#7aa2f7]'}`}
+          >
+            <Zap size={20} />
+          </button>
+          <button 
+            onClick={() => setView('agents')}
+            title="Agent Library"
+            className={`flex-1 flex items-center justify-center p-2.5 rounded-xl transition-all ${view === 'agents' ? 'bg-[#33467C] text-white shadow-lg' : 'text-[#565f89] hover:bg-[#33467C]/30 hover:text-[#7aa2f7]'}`}
+          >
+            <Bot size={20} />
+          </button>
+          <button 
             onClick={() => setView('studio')}
             title="Persona Studio"
             className={`flex-1 flex items-center justify-center p-2.5 rounded-xl transition-all ${view === 'studio' ? 'bg-[#33467C] text-white shadow-lg' : 'text-[#565f89] hover:bg-[#33467C]/30 hover:text-[#7aa2f7]'}`}
@@ -103,7 +118,7 @@ const App = () => {
             <h1 className="m-0 text-xl font-black tracking-tighter text-white uppercase">Overseer</h1>
             <div className="h-4 w-[1px] bg-[#33467C]/50" />
             <div className="text-[10px] text-[#7aa2f7] font-mono uppercase tracking-[0.2em] font-bold">
-              {view === 'studio' ? 'Agent Forge' : (sessions.find(s => s.id === activeId)?.name || 'Terminal')}
+              {view === 'studio' ? 'Agent Forge' : view === 'skills' ? 'Technical Grimoire' : view === 'agents' ? 'Autonomous Synapses' : (sessions.find(s => s.id === activeId)?.name || 'Terminal')}
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -124,8 +139,12 @@ const App = () => {
                 />
               )}
             </div>
-          ) : (
+          ) : view === 'studio' ? (
             <PersonaStudio />
+          ) : view === 'skills' ? (
+            <ResourceLibrary type="skill" />
+          ) : (
+            <ResourceLibrary type="agent" />
           )}
         </main>
       </div>

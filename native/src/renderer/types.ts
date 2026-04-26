@@ -45,3 +45,11 @@ export interface SessionMetadata {
   lastUsed: number;
   isArchived: boolean;
 }
+
+export interface Skill {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  content: string;
+}
