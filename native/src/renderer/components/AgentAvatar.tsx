@@ -14,24 +14,50 @@ interface AgentAvatarProps {
 
 export const AgentAvatar: React.FC<AgentAvatarProps> = ({
   avatarConfig,
-  state = 'idle',
+  state: initialState = 'idle',
   talkingUntil = 0,
   size = 40,
   className = '',
 }) => {
+  const [state, setState] = useState(initialState);
   const [mouthVariant, setMouthVariant] = useState(avatarConfig.mouth);
+
+  // Sync state if initial state changes (except when in 'auto')
+  useEffect(() => {
+    if (initialState !== 'auto') {
+      setState(initialState);
+    }
+  }, [initialState]);
+
+  // Handle auto-cycling for previews
+  useEffect(() => {
+    if (initialState !== 'auto') return;
+
+    const cycle = () => {
+      setState('talking');
+      setTimeout(() => {
+        setState('thinking');
+        setTimeout(() => {
+          setState('idle');
+        }, 3000);
+      }, 3000);
+    };
+
+    cycle();
+    const interval = setInterval(cycle, 10000);
+    return () => clearInterval(interval);
+  }, [initialState]);
 
   useEffect(() => {
     if (state !== 'talking') {
       setMouthVariant(avatarConfig.mouth);
       return;
     }
-    setMouthVariant(avatarConfig.mouth);
     const interval = setInterval(() => {
       setMouthVariant(v => (v === avatarConfig.mouth ? 'happy07' : avatarConfig.mouth));
     }, 150);
     return () => clearInterval(interval);
-  }, [talkingUntil, state, avatarConfig.mouth]);
+  }, [state, avatarConfig.mouth]);
 
   const svgDataUrl = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

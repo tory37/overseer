@@ -19,7 +19,9 @@ interface NewSessionOverlayProps {
   }) => void;
 }
 
-export const NewSessionOverlay: React.FC<NewSessionOverlayProps> = ({ repository, onClose, onLaunch }) => {
+export const NewSessionOverlay: React.FC<NewSessionOverlayProps> = ({ repository: initialRepo, onClose, onLaunch }) => {
+  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState<Repository>(initialRepo);
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [branches, setBranches] = useState<string[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
@@ -28,32 +30,61 @@ export const NewSessionOverlay: React.FC<NewSessionOverlayProps> = ({ repository
   const [worktreeName, setWorktreeName] = useState('');
   const [baseBranch, setBaseBranch] = useState('master');
   const [command, setCommand] = useState('gemini --approval-mode yolo');
-  const [sessionName, setSessionName] = useState(`${repository.name} Session`);
+  const [sessionName, setSessionName] = useState(`${initialRepo.name} Session`);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const init = async () => {
+    const loadData = async () => {
       try {
-        const loadedPersonas = await ipcRenderer.invoke('store-load-personas');
+        const [loadedPersonas, loadedRepos] = await Promise.all([
+          ipcRenderer.invoke('store-load-personas'),
+          ipcRenderer.invoke('store-load-repos')
+        ]);
+        
         setPersonas(loadedPersonas || []);
-        if (loadedPersonas?.length > 0) setSelectedPersonaId(loadedPersonas[0].id);
+        if (loadedPersonas?.length > 0 && !selectedPersonaId) {
+          setSelectedPersonaId(loadedPersonas[0].id);
+        }
 
-        const loadedBranches = await ipcRenderer.invoke('git-list-branches', { repoPath: repository.path });
+        // Add the local-cwd if it doesn't exist in saved repos
+        const allRepos = loadedRepos || [];
+        const hasLocal = allRepos.find((r: Repository) => r.id === 'local-cwd');
+        if (!hasLocal && initialRepo.id === 'local-cwd') {
+          allRepos.unshift(initialRepo);
+        }
+        setRepositories(allRepos);
+      } catch (err) {
+        console.error('Failed to load initial data:', err);
+      }
+    };
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    const loadBranches = async () => {
+      try {
+        const loadedBranches = await ipcRenderer.invoke('git-list-branches', { repoPath: selectedRepo.path });
         setBranches(loadedBranches || []);
         if (loadedBranches.includes('master')) setBaseBranch('master');
         else if (loadedBranches.includes('main')) setBaseBranch('main');
         else if (loadedBranches.length > 0) setBaseBranch(loadedBranches[0]);
       } catch (err) {
-        console.error('Failed to initialize session overlay:', err);
+        console.error('Failed to load branches:', err);
+        setBranches([]);
       }
     };
-    init();
-  }, [repository]);
+    loadBranches();
+    
+    // Update session name if it was the default for the previous repo
+    if (sessionName.includes('Session')) {
+      setSessionName(`${selectedRepo.name} Session`);
+    }
+  }, [selectedRepo]);
 
   const handleLaunch = () => {
     onLaunch({
       name: sessionName,
-      path: repository.path,
+      path: selectedRepo.path,
       personaId: selectedPersonaId,
       command,
       isWorktree,
@@ -74,7 +105,7 @@ export const NewSessionOverlay: React.FC<NewSessionOverlayProps> = ({ repository
             <div>
               <h2 className="text-xl font-bold text-slate-100">Launch Session</h2>
               <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-black">
-                Configuring context for <span className="text-blue-400">{repository.name}</span>
+                Configuring context for <span className="text-blue-400">{selectedRepo.name}</span>
               </p>
             </div>
           </div>
@@ -90,6 +121,22 @@ export const NewSessionOverlay: React.FC<NewSessionOverlayProps> = ({ repository
           {/* Left Column: Workspace Config */}
           <div className="flex flex-col p-8 space-y-8 overflow-y-auto custom-scrollbar">
             <div className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Active Repository</label>
+                <select 
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-600/50 transition-all appearance-none"
+                  value={selectedRepo.id}
+                  onChange={e => {
+                    const repo = repositories.find(r => r.id === e.target.value);
+                    if (repo) setSelectedRepo(repo);
+                  }}
+                >
+                  {repositories.map(r => (
+                    <option key={r.id} value={r.id}>{r.name} ({r.path})</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Session Name</label>
                 <input 
@@ -216,10 +263,10 @@ export const NewSessionOverlay: React.FC<NewSessionOverlayProps> = ({ repository
 
         {/* Footer */}
         <div className="px-8 py-6 border-t border-slate-800 bg-slate-950/50 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <GitBranch className="w-4 h-4 text-slate-600" />
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-              Context: {repository.name} {isWorktree && `/ Worktree: ${worktreeName || '...'}`}
+          <div className="flex items-center gap-2 text-slate-400">
+            <GitBranch className="w-4 h-4" />
+            <span className="text-[10px] font-black uppercase tracking-widest truncate max-w-[400px]">
+              {selectedRepo.name} {isWorktree && `/ Worktree: ${worktreeName || '...'}`}
             </span>
           </div>
           <button 
@@ -235,3 +282,4 @@ export const NewSessionOverlay: React.FC<NewSessionOverlayProps> = ({ repository
     </div>
   );
 };
+

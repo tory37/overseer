@@ -8,7 +8,7 @@ import { ResourceLibrary } from './components/ResourceLibrary';
 import { Repositories } from './components/Repositories';
 import { NewSessionOverlay } from './components/NewSessionOverlay';
 import { Settings, Terminal as TerminalIcon, Zap, Bot, FolderOpen } from 'lucide-react';
-import { Repository } from './types';
+import { Repository, Persona } from './types';
 import './index.css';
 
 const { ipcRenderer } = window.require('electron');
@@ -19,21 +19,40 @@ interface Session {
   cwd: string;
   isArchived: boolean;
   persona?: string;
+  personaConfig?: Persona;
 }
 
 const App = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [personas, setPersonas] = useState<Persona[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [voiceText, setVoiceText] = useState<string>('');
+  const [isThinking, setIsThinking] = useState<boolean>(false);
   const [view, setView] = useState<'terminal' | 'studio' | 'skills' | 'agents' | 'repos'>('terminal');
   const [showLaunchOverlay, setShowLaunchOverlay] = useState<Repository | null>(null);
 
   useEffect(() => {
+    setVoiceText('');
+    setIsThinking(false);
+  }, [activeId, view]);
+
+  useEffect(() => {
     const init = async () => {
-      const savedSessions = await ipcRenderer.invoke('store-load-sessions');
+      const [savedSessions, loadedPersonas] = await Promise.all([
+        ipcRenderer.invoke('store-load-sessions'),
+        ipcRenderer.invoke('store-load-personas')
+      ]);
+
+      setPersonas(loadedPersonas || []);
+
       if (savedSessions && savedSessions.length > 0) {
-        setSessions(savedSessions);
-        setActiveId(savedSessions.find((s: any) => !s.isArchived)?.id || savedSessions[0].id);
+        // Link personas to sessions
+        const sessionsWithPersonas = savedSessions.map((s: any) => ({
+          ...s,
+          personaConfig: loadedPersonas?.find((p: Persona) => p.id === s.persona)
+        }));
+        setSessions(sessionsWithPersonas);
+        setActiveId(sessionsWithPersonas.find((s: any) => !s.isArchived)?.id || sessionsWithPersonas[0].id);
       } else {
         const defaultSession = { id: 'default', name: 'Main Terminal', cwd: process.env.HOME || '/', isArchived: false };
         setSessions([defaultSession]);
@@ -45,19 +64,28 @@ const App = () => {
 
   useEffect(() => {
     if (sessions.length > 0) {
-      ipcRenderer.send('store-save-sessions', sessions);
+      // Don't save personaConfig to file, it's linked at runtime
+      const sessionsToSave = sessions.map(({ personaConfig, ...s }) => s);
+      ipcRenderer.send('store-save-sessions', sessionsToSave);
     }
   }, [sessions]);
 
-  const handleNewSession = () => {
-    // Default to the first repository or create a placeholder if none exists
-    const defaultRepo: Repository = {
-      id: 'local-cwd',
-      name: 'Local Workspace',
-      path: process.env.HOME || '/',
-      description: 'System default workspace'
-    };
-    setShowLaunchOverlay(defaultRepo);
+  const handleNewSession = async () => {
+    // Try to load repositories first
+    const repos = await ipcRenderer.invoke('store-load-repos');
+    
+    if (repos && repos.length > 0) {
+      setShowLaunchOverlay(repos[0]);
+    } else {
+      // Default to the first repository or create a placeholder if none exists
+      const defaultRepo: Repository = {
+        id: 'local-cwd',
+        name: 'Local Workspace',
+        path: process.env.HOME || '/',
+        description: 'System default workspace'
+      };
+      setShowLaunchOverlay(defaultRepo);
+    }
   };
 
   const handleLaunchSessionFromRepo = (repo: Repository) => {
@@ -94,7 +122,8 @@ const App = () => {
       name: config.name, 
       cwd: finalPath, 
       isArchived: false,
-      persona: config.personaId || undefined
+      persona: config.personaId || undefined,
+      personaConfig: personas.find(p => p.id === config.personaId)
     };
 
     setSessions([...sessions, newSession]);
@@ -123,6 +152,18 @@ const App = () => {
     ipcRenderer.send('pty-kill', { id });
   };
 
+  const refreshPersonas = async () => {
+    const loadedPersonas = await ipcRenderer.invoke('store-load-personas');
+    setPersonas(loadedPersonas || []);
+    // Re-link personas to sessions
+    setSessions(prev => prev.map(s => ({
+      ...s,
+      personaConfig: loadedPersonas?.find((p: Persona) => p.id === s.persona)
+    })));
+  };
+
+  const activeSession = sessions.find(s => s.id === activeId);
+
   return (
     <div className="flex h-screen bg-[#1a1b26] text-[#a9b1d6] font-sans overflow-hidden">
       <div className="flex flex-col h-full border-r border-[#33467C] bg-[#16161e] shrink-0">
@@ -135,7 +176,11 @@ const App = () => {
           onDelete={handleDeleteSession}
         />
         
-        <MascotFrame voiceText={voiceText} />
+        <MascotFrame 
+          persona={activeSession?.personaConfig}
+          voiceText={voiceText} 
+          isThinking={isThinking}
+        />
 
         {/* View Switcher Footer */}
         <div className="p-3 border-t border-[#33467C] flex gap-2 bg-[#1a1b26]/50 backdrop-blur-sm">
@@ -206,11 +251,12 @@ const App = () => {
                   cwd={sessions.find(s => s.id === activeId)?.cwd} 
                   persona={sessions.find(s => s.id === activeId)?.persona}
                   onVoice={setVoiceText}
+                  onActivity={setIsThinking}
                 />
               )}
             </div>
           ) : view === 'studio' ? (
-            <PersonaStudio />
+            <PersonaStudio onPersonaChanged={refreshPersonas} />
           ) : view === 'skills' ? (
             <ResourceLibrary type="skill" />
           ) : view === 'agents' ? (

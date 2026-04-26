@@ -1,10 +1,14 @@
 import React from 'react';
 import { Plus, Terminal as TerminalIcon, Archive, Trash2 } from 'lucide-react';
+import { AgentAvatar } from './AgentAvatar';
+import { Persona } from '../types';
 
 interface Session {
   id: string;
   name: string;
   isArchived: boolean;
+  persona?: string;
+  personaConfig?: Persona;
 }
 
 interface SidebarProps {
@@ -49,7 +53,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ${activeId === session.id ? 'bg-[#33467C] text-white shadow-lg' : 'text-[#a9b1d6] hover:bg-[#33467C]/30'}
             `}
           >
-            <TerminalIcon size={16} className={activeId === session.id ? 'opacity-100' : 'opacity-40'} />
+            {session.personaConfig ? (
+              <AgentAvatar 
+                avatarConfig={session.personaConfig.avatarConfig} 
+                size={20} 
+                className={activeId === session.id ? '' : 'grayscale opacity-50'}
+              />
+            ) : (
+              <TerminalIcon size={16} className={activeId === session.id ? 'opacity-100' : 'opacity-40'} />
+            )}
             <span className="text-sm font-medium flex-1 truncate">{session.name}</span>
             <button 
               onClick={(e) => { e.stopPropagation(); onArchive(session.id); }}

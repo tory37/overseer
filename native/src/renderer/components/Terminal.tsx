@@ -11,13 +11,15 @@ interface TerminalProps {
   persona?: string;
   onData?: (data: string) => void;
   onVoice?: (text: string) => void;
+  onActivity?: (isThinking: boolean) => void;
 }
 
-export const Terminal: React.FC<TerminalProps> = ({ id, cwd, persona, onData, onVoice }) => {
+export const Terminal: React.FC<TerminalProps> = ({ id, cwd, persona, onData, onVoice, onActivity }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Xterm>();
   const fitAddonRef = useRef<FitAddon>();
   const voiceBufferRef = useRef<string>('');
+  const thinkingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const term = new Xterm({
@@ -53,6 +55,25 @@ export const Terminal: React.FC<TerminalProps> = ({ id, cwd, persona, onData, on
       term.write(data);
       if (onData) onData(data);
       
+      // Activity / Thinking detection
+      const text = data.toString();
+      const isSpinning = text.includes('\r') && (
+        text.includes('⠋') || text.includes('⠙') || text.includes('⠹') || 
+        text.includes('⠸') || text.includes('⠼') || text.includes('⠴') || 
+        text.includes('⠦') || text.includes('⠧') || text.includes('⠇') || 
+        text.includes('⠏')
+      );
+      
+      const isThinkingText = text.toLowerCase().includes('thinking...');
+      
+      if (isSpinning || isThinkingText) {
+        if (onActivity) onActivity(true);
+        if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
+        thinkingTimeoutRef.current = setTimeout(() => {
+          if (onActivity) onActivity(false);
+        }, 2000);
+      }
+
       // Voice detection logic
       voiceBufferRef.current += data;
       const voiceRegex = /<voice>(.*?)<\/voice>/g;
@@ -91,11 +112,12 @@ export const Terminal: React.FC<TerminalProps> = ({ id, cwd, persona, onData, on
     setTimeout(handleResize, 100);
 
     return () => {
+      if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
       window.removeEventListener('resize', handleResize);
       ipcRenderer.removeListener(`pty-data-${id}`, ptyDataListener);
       term.dispose();
     };
-  }, [id, cwd, persona, onData, onVoice]);
+  }, [id, cwd, persona, onData, onVoice, onActivity]);
 
   return <div ref={terminalRef} style={{ height: '100%', width: '100%' }} />;
 };

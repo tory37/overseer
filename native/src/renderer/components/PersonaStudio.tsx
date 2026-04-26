@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AgentAvatar } from './AgentAvatar';
 import { Persona, AvatarConfig, DEFAULT_AVATAR_CONFIG } from '../types';
 
@@ -224,7 +224,7 @@ export const PersonaStudio: React.FC<PersonaStudioProps> = ({ onPersonaChanged }
             <div className="flex items-center gap-10 p-8 bg-slate-900/40 rounded-[2rem] border border-slate-800/50 backdrop-blur shadow-2xl">
               <div className="relative group">
                 <div className="absolute -inset-4 bg-blue-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                <AgentAvatar avatarConfig={formData.avatarConfig} size={140} className="relative z-10" />
+                <AgentAvatar avatarConfig={formData.avatarConfig} size={140} state="auto" className="relative z-10" />
               </div>
               <div className="flex-1 space-y-4">
                 <input
