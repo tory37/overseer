@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import isDev from 'electron-is-dev';
 import { PtyManager } from './pty-manager';
+import './store'; // Register store IPC handlers
 
 const ptyManager = new PtyManager();
 
