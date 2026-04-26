@@ -1,4 +1,5 @@
 import React from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface MascotFrameProps {
   voiceText?: string;
@@ -7,52 +8,45 @@ interface MascotFrameProps {
 
 export const MascotFrame: React.FC<MascotFrameProps> = ({ voiceText, isThinking }) => {
   return (
-    <div style={{ 
-      padding: '20px', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center',
-      borderTop: '1px solid #33467C',
-      backgroundColor: '#16161e'
-    }}>
-      <div style={{ position: 'relative', width: '80px', height: '80px' }}>
-        <img 
-          src="/assets/avatars/overseer.svg" 
-          alt="Overseer Mascot" 
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-        />
+    <div className="p-6 flex flex-col items-center border-t border-[#33467C]/30 bg-[#16161e] shrink-0">
+      <div className="relative group">
+        <div className="absolute -inset-2 bg-blue-500/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+        <motion.div
+          animate={isThinking ? { scale: [1, 1.05, 1] } : {}}
+          transition={{ repeat: Infinity, duration: 2 }}
+          className="relative w-20 h-20 bg-slate-900/50 rounded-2xl border border-slate-800/50 p-2 shadow-inner"
+        >
+          <img 
+            src="/assets/avatars/overseer.svg" 
+            alt="Overseer" 
+            className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]"
+          />
+        </motion.div>
+        
         {isThinking && (
-          <div className="thinking-dots" style={{ position: 'absolute', top: -10, right: -10 }}>
-            ...
+          <div className="absolute -top-1 -right-1 flex gap-1 bg-blue-600 px-2 py-1 rounded-full shadow-lg border border-blue-400">
+            <span className="w-1 h-1 bg-white rounded-full animate-bounce" />
+            <span className="w-1 h-1 bg-white rounded-full animate-bounce [animation-delay:0.2s]" />
+            <span className="w-1 h-1 bg-white rounded-full animate-bounce [animation-delay:0.4s]" />
           </div>
         )}
       </div>
       
-      {voiceText && (
-        <div style={{ 
-          marginTop: '15px', 
-          padding: '12px 16px', 
-          backgroundColor: '#33467C', 
-          borderRadius: '12px',
-          color: '#fff',
-          fontSize: '0.9rem',
-          lineHeight: '1.4',
-          position: 'relative',
-          width: '100%',
-          maxWidth: '200px'
-        }}>
-          {voiceText}
-          <div style={{ 
-            position: 'absolute', 
-            top: '-8px', 
-            left: '50%', 
-            transform: 'translateX(-50%)',
-            borderLeft: '8px solid transparent',
-            borderRight: '8px solid transparent',
-            borderBottom: '8px solid #33467C'
-          }} />
-        </div>
-      )}
+      <AnimatePresence>
+        {voiceText && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="mt-5 relative w-full"
+          >
+            <div className="p-4 bg-blue-600 rounded-2xl text-white text-[13px] leading-relaxed shadow-xl shadow-blue-900/20 font-medium">
+              {voiceText}
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-600 rotate-45" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

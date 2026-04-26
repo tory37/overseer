@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { Terminal } from './components/Terminal';
 import { Sidebar } from './components/Sidebar';
 import { MascotFrame } from './components/MascotFrame';
+import { PersonaStudio } from './components/PersonaStudio';
+import { Settings, Terminal as TerminalIcon } from 'lucide-react';
+import './index.css';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -17,6 +20,7 @@ const App = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [voiceText, setVoiceText] = useState<string>('');
+  const [view, setView] = useState<'terminal' | 'studio'>('terminal');
 
   useEffect(() => {
     const init = async () => {
@@ -44,6 +48,7 @@ const App = () => {
     const newSession = { id, name: `Session ${sessions.length + 1}`, cwd: process.env.HOME || '/', isArchived: false };
     setSessions([...sessions, newSession]);
     setActiveId(id);
+    setView('terminal');
   };
 
   const handleArchiveSession = (id: string) => {
@@ -60,52 +65,73 @@ const App = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#1a1b26', color: '#a9b1d6', height: '100vh', display: 'flex', fontFamily: 'sans-serif', margin: 0, padding: 0 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', borderRight: '1px solid #33467C' }}>
+    <div className="flex h-screen bg-[#1a1b26] text-[#a9b1d6] font-sans overflow-hidden">
+      <div className="flex flex-col h-full border-r border-[#33467C] bg-[#16161e] shrink-0">
         <Sidebar 
           sessions={sessions} 
           activeId={activeId} 
-          onSelect={setActiveId} 
+          onSelect={(id) => { setActiveId(id); setView('terminal'); }} 
           onNew={handleNewSession}
           onArchive={handleArchiveSession}
           onDelete={handleDeleteSession}
         />
+        
         <MascotFrame voiceText={voiceText} />
+
+        {/* View Switcher Footer */}
+        <div className="p-3 border-t border-[#33467C] flex gap-2 bg-[#1a1b26]/50 backdrop-blur-sm">
+          <button 
+            onClick={() => setView('terminal')}
+            title="Terminal Sessions"
+            className={`flex-1 flex items-center justify-center p-2.5 rounded-xl transition-all ${view === 'terminal' ? 'bg-[#33467C] text-white shadow-lg' : 'text-[#565f89] hover:bg-[#33467C]/30 hover:text-[#7aa2f7]'}`}
+          >
+            <TerminalIcon size={20} />
+          </button>
+          <button 
+            onClick={() => setView('studio')}
+            title="Persona Studio"
+            className={`flex-1 flex items-center justify-center p-2.5 rounded-xl transition-all ${view === 'studio' ? 'bg-[#33467C] text-white shadow-lg' : 'text-[#565f89] hover:bg-[#33467C]/30 hover:text-[#7aa2f7]'}`}
+          >
+            <Settings size={20} />
+          </button>
+        </div>
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <header style={{ padding: '10px 20px', borderBottom: '1px solid #33467C', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ margin: 0, fontSize: '1.2rem' }}>Overseer</h1>
-          <div style={{ fontSize: '0.9rem', color: '#565f89' }}>
-            {sessions.find(s => s.id === activeId)?.name || 'No Active Session'}
+
+      <div className="flex-1 flex flex-col min-w-0 bg-[#1a1b26]">
+        <header className="px-6 py-4 border-b border-[#33467C]/50 flex justify-between items-center bg-[#1a1b26]/80 backdrop-blur z-10 shadow-sm">
+          <div className="flex items-center gap-4">
+            <h1 className="m-0 text-xl font-black tracking-tighter text-white uppercase">Overseer</h1>
+            <div className="h-4 w-[1px] bg-[#33467C]/50" />
+            <div className="text-[10px] text-[#7aa2f7] font-mono uppercase tracking-[0.2em] font-bold">
+              {view === 'studio' ? 'Agent Forge' : (sessions.find(s => s.id === activeId)?.name || 'Terminal')}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse" />
+            <span className="text-[9px] font-mono text-[#565f89] uppercase tracking-widest">System Active</span>
           </div>
         </header>
-        <main style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-          {activeId && (
-            <Terminal 
-              key={activeId} 
-              id={activeId} 
-              cwd={sessions.find(s => s.id === activeId)?.cwd} 
-              onVoice={setVoiceText}
-            />
+
+        <main className="flex-1 relative overflow-hidden">
+          {view === 'terminal' ? (
+            <div className="h-full p-4">
+              {activeId && (
+                <Terminal 
+                  key={activeId} 
+                  id={activeId} 
+                  cwd={sessions.find(s => s.id === activeId)?.cwd} 
+                  onVoice={setVoiceText}
+                />
+              )}
+            </div>
+          ) : (
+            <PersonaStudio />
           )}
         </main>
       </div>
     </div>
   );
 };
-
-// Global styles for the app
-const style = document.createElement('style');
-style.textContent = `
-  body { margin: 0; padding: 0; overflow: hidden; background-color: #1a1b26; }
-  #root { height: 100vh; }
-  * { box-sizing: border-box; }
-  ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #33467C; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #4a5d8e; }
-`;
-document.head.appendChild(style);
 
 const root = createRoot(document.getElementById('root')!);
 root.render(<App />);

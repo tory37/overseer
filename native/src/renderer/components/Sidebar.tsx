@@ -28,54 +28,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const archivedSessions = sessions.filter(s => s.isArchived);
 
   return (
-    <div style={{ 
-      width: '240px', 
-      backgroundColor: '#16161e', 
-      borderRight: '1px solid #33467C',
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%'
-    }}>
-      <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ color: '#565f89', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sessions</span>
+    <div className="w-60 bg-[#16161e] border-r border-[#33467C] flex flex-col h-full overflow-hidden">
+      <div className="p-5 flex justify-between items-center">
+        <span className="text-[#565f89] text-[10px] font-bold uppercase tracking-[0.2em]">Sessions</span>
         <button 
           onClick={onNew}
-          style={{ 
-            background: 'none', 
-            border: 'none', 
-            color: '#7aa2f7', 
-            cursor: 'pointer',
-            padding: '4px',
-            display: 'flex',
-            alignItems: 'center'
-          }}
+          className="bg-transparent border-none text-[#7aa2f7] hover:text-[#89b4fa] cursor-pointer p-1 flex items-center transition-colors"
         >
           <Plus size={18} />
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px' }}>
+      <div className="flex-1 overflow-y-auto px-3 space-y-1">
         {activeSessions.map(session => (
           <div 
             key={session.id}
             onClick={() => onSelect(session.id)}
-            style={{
-              padding: '10px 12px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              backgroundColor: activeId === session.id ? '#33467C' : 'transparent',
-              color: activeId === session.id ? '#fff' : '#a9b1d6',
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '4px',
-              transition: 'background-color 0.2s'
-            }}
+            className={`
+              group p-2.5 rounded-lg cursor-pointer flex items-center gap-3 transition-all
+              ${activeId === session.id ? 'bg-[#33467C] text-white shadow-lg' : 'text-[#a9b1d6] hover:bg-[#33467C]/30'}
+            `}
           >
-            <TerminalIcon size={16} style={{ marginRight: '10px', opacity: activeId === session.id ? 1 : 0.6 }} />
-            <span style={{ fontSize: '0.9rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.name}</span>
+            <TerminalIcon size={16} className={activeId === session.id ? 'opacity-100' : 'opacity-40'} />
+            <span className="text-sm font-medium flex-1 truncate">{session.name}</span>
             <button 
               onClick={(e) => { e.stopPropagation(); onArchive(session.id); }}
-              style={{ background: 'none', border: 'none', color: '#565f89', cursor: 'pointer', padding: '2px' }}
+              className="opacity-0 group-hover:opacity-100 bg-transparent border-none text-[#565f89] hover:text-[#7aa2f7] cursor-pointer p-1 transition-all"
             >
               <Archive size={14} />
             </button>
@@ -84,24 +62,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {archivedSessions.length > 0 && (
           <>
-            <div style={{ padding: '20px 10px 10px', color: '#565f89', fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Archive</div>
+            <div className="px-3 pt-6 pb-2 text-[#565f89] text-[9px] font-bold uppercase tracking-widest">Archive</div>
             {archivedSessions.map(session => (
               <div 
                 key={session.id}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '6px',
-                  color: '#565f89',
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginBottom: '4px',
-                  opacity: 0.7
-                }}
+                className="group p-2 px-3 rounded-lg text-[#565f89] flex items-center gap-3 hover:bg-slate-800/20 transition-all"
               >
-                <span style={{ fontSize: '0.85rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.name}</span>
+                <span className="text-xs flex-1 truncate">{session.name}</span>
                 <button 
                   onClick={() => onDelete(session.id)}
-                  style={{ background: 'none', border: 'none', color: '#f7768e', cursor: 'pointer', padding: '2px' }}
+                  className="opacity-0 group-hover:opacity-100 bg-transparent border-none text-[#f7768e] hover:text-red-400 cursor-pointer p-1 transition-all"
                 >
                   <Trash2 size={14} />
                 </button>
