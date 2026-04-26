@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Terminal } from './components/Terminal';
 import { Sidebar } from './components/Sidebar';
+import { MascotFrame } from './components/MascotFrame';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -15,6 +16,7 @@ interface Session {
 const App = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeId, setActiveId] = useState<string>('');
+  const [voiceText, setVoiceText] = useState<string>('');
 
   useEffect(() => {
     const init = async () => {
@@ -59,14 +61,17 @@ const App = () => {
 
   return (
     <div style={{ backgroundColor: '#1a1b26', color: '#a9b1d6', height: '100vh', display: 'flex', fontFamily: 'sans-serif', margin: 0, padding: 0 }}>
-      <Sidebar 
-        sessions={sessions} 
-        activeId={activeId} 
-        onSelect={setActiveId} 
-        onNew={handleNewSession}
-        onArchive={handleArchiveSession}
-        onDelete={handleDeleteSession}
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', borderRight: '1px solid #33467C' }}>
+        <Sidebar 
+          sessions={sessions} 
+          activeId={activeId} 
+          onSelect={setActiveId} 
+          onNew={handleNewSession}
+          onArchive={handleArchiveSession}
+          onDelete={handleDeleteSession}
+        />
+        <MascotFrame voiceText={voiceText} />
+      </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <header style={{ padding: '10px 20px', borderBottom: '1px solid #33467C', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 style={{ margin: 0, fontSize: '1.2rem' }}>Overseer</h1>
@@ -75,7 +80,14 @@ const App = () => {
           </div>
         </header>
         <main style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-          {activeId && <Terminal key={activeId} id={activeId} cwd={sessions.find(s => s.id === activeId)?.cwd} />}
+          {activeId && (
+            <Terminal 
+              key={activeId} 
+              id={activeId} 
+              cwd={sessions.find(s => s.id === activeId)?.cwd} 
+              onVoice={setVoiceText}
+            />
+          )}
         </main>
       </div>
     </div>

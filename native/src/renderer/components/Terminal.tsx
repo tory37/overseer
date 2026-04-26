@@ -9,12 +9,14 @@ interface TerminalProps {
   id: string;
   cwd?: string;
   onData?: (data: string) => void;
+  onVoice?: (text: string) => void;
 }
 
-export const Terminal: React.FC<TerminalProps> = ({ id, cwd, onData }) => {
+export const Terminal: React.FC<TerminalProps> = ({ id, cwd, onData, onVoice }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Xterm>();
   const fitAddonRef = useRef<FitAddon>();
+  const voiceBufferRef = useRef<string>('');
 
   useEffect(() => {
     const term = new Xterm({
@@ -49,6 +51,17 @@ export const Terminal: React.FC<TerminalProps> = ({ id, cwd, onData }) => {
     const onDataHandler = (data: string) => {
       term.write(data);
       if (onData) onData(data);
+      
+      // Voice detection logic
+      voiceBufferRef.current += data;
+      const voiceRegex = /<voice>(.*?)<\/voice>/g;
+      let match;
+      while ((match = voiceRegex.exec(voiceBufferRef.current)) !== null) {
+        if (onVoice) onVoice(match[1]);
+      }
+      if (voiceBufferRef.current.length > 5000) {
+        voiceBufferRef.current = voiceBufferRef.current.slice(-1000);
+      }
     };
 
     const ptyDataListener = (_: any, data: string) => onDataHandler(data);
