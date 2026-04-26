@@ -6,6 +6,7 @@ import { setupAdapters } from './adapter-manager';
 import './store'; // Register store IPC handlers
 import './skills-manager'; // Register skills IPC handlers
 import './agents-manager'; // Register agents IPC handlers
+import './git-utils'; // Register git IPC handlers
 
 const ptyManager = new PtyManager();
 

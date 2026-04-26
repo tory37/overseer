@@ -5,7 +5,10 @@ import { Sidebar } from './components/Sidebar';
 import { MascotFrame } from './components/MascotFrame';
 import { PersonaStudio } from './components/PersonaStudio';
 import { ResourceLibrary } from './components/ResourceLibrary';
-import { Settings, Terminal as TerminalIcon, Zap, Bot } from 'lucide-react';
+import { Repositories } from './components/Repositories';
+import { NewSessionOverlay } from './components/NewSessionOverlay';
+import { Settings, Terminal as TerminalIcon, Zap, Bot, FolderOpen } from 'lucide-react';
+import { Repository } from './types';
 import './index.css';
 
 const { ipcRenderer } = window.require('electron');
@@ -15,13 +18,15 @@ interface Session {
   name: string;
   cwd: string;
   isArchived: boolean;
+  persona?: string;
 }
 
 const App = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [voiceText, setVoiceText] = useState<string>('');
-  const [view, setView] = useState<'terminal' | 'studio' | 'skills' | 'agents'>('terminal');
+  const [view, setView] = useState<'terminal' | 'studio' | 'skills' | 'agents' | 'repos'>('terminal');
+  const [showLaunchOverlay, setShowLaunchOverlay] = useState<Repository | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -45,11 +50,57 @@ const App = () => {
   }, [sessions]);
 
   const handleNewSession = () => {
+    setView('repos');
+  };
+
+  const handleLaunchSessionFromRepo = (repo: Repository) => {
+    setShowLaunchOverlay(repo);
+  };
+
+  const handleLaunchFinal = async (config: {
+    name: string;
+    path: string;
+    personaId: string | null;
+    command: string;
+    isWorktree: boolean;
+    worktreeName: string;
+    baseBranch: string;
+  }) => {
+    let finalPath = config.path;
+
+    if (config.isWorktree && config.worktreeName) {
+      const result = await ipcRenderer.invoke('git-add-worktree', {
+        repoPath: config.path,
+        name: config.worktreeName,
+        branch: config.baseBranch
+      });
+      if (result) {
+        finalPath = result;
+      } else {
+        alert('Failed to create worktree. Falling back to repository root.');
+      }
+    }
+
     const id = `session-${Date.now()}`;
-    const newSession = { id, name: `Session ${sessions.length + 1}`, cwd: process.env.HOME || '/', isArchived: false };
+    const newSession: Session = { 
+      id, 
+      name: config.name, 
+      cwd: finalPath, 
+      isArchived: false,
+      persona: config.personaId || undefined
+    };
+
     setSessions([...sessions, newSession]);
     setActiveId(id);
+    setShowLaunchOverlay(null);
     setView('terminal');
+
+    // Small delay to ensure Terminal component is mounted before sending command
+    setTimeout(() => {
+      if (config.command) {
+        ipcRenderer.send('pty-write', { id, data: `${config.command}\r` });
+      }
+    }, 500);
   };
 
   const handleArchiveSession = (id: string) => {
@@ -89,6 +140,13 @@ const App = () => {
             <TerminalIcon size={20} />
           </button>
           <button 
+            onClick={() => setView('repos')}
+            title="Worktree Hub"
+            className={`flex-1 flex items-center justify-center p-2.5 rounded-xl transition-all ${view === 'repos' ? 'bg-[#33467C] text-white shadow-lg' : 'text-[#565f89] hover:bg-[#33467C]/30 hover:text-[#7aa2f7]'}`}
+          >
+            <FolderOpen size={20} />
+          </button>
+          <button 
             onClick={() => setView('skills')}
             title="Skill Library"
             className={`flex-1 flex items-center justify-center p-2.5 rounded-xl transition-all ${view === 'skills' ? 'bg-[#33467C] text-white shadow-lg' : 'text-[#565f89] hover:bg-[#33467C]/30 hover:text-[#7aa2f7]'}`}
@@ -118,7 +176,11 @@ const App = () => {
             <h1 className="m-0 text-xl font-black tracking-tighter text-white uppercase">Overseer</h1>
             <div className="h-4 w-[1px] bg-[#33467C]/50" />
             <div className="text-[10px] text-[#7aa2f7] font-mono uppercase tracking-[0.2em] font-bold">
-              {view === 'studio' ? 'Agent Forge' : view === 'skills' ? 'Technical Grimoire' : view === 'agents' ? 'Autonomous Synapses' : (sessions.find(s => s.id === activeId)?.name || 'Terminal')}
+              {view === 'studio' ? 'Agent Forge' : 
+               view === 'skills' ? 'Technical Grimoire' : 
+               view === 'agents' ? 'Autonomous Synapses' : 
+               view === 'repos' ? 'Worktree Hub' :
+               (sessions.find(s => s.id === activeId)?.name || 'Terminal')}
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -135,6 +197,7 @@ const App = () => {
                   key={activeId} 
                   id={activeId} 
                   cwd={sessions.find(s => s.id === activeId)?.cwd} 
+                  persona={sessions.find(s => s.id === activeId)?.persona}
                   onVoice={setVoiceText}
                 />
               )}
@@ -143,11 +206,21 @@ const App = () => {
             <PersonaStudio />
           ) : view === 'skills' ? (
             <ResourceLibrary type="skill" />
-          ) : (
+          ) : view === 'agents' ? (
             <ResourceLibrary type="agent" />
+          ) : (
+            <Repositories onLaunchSession={handleLaunchSessionFromRepo} />
           )}
         </main>
       </div>
+
+      {showLaunchOverlay && (
+        <NewSessionOverlay 
+          repository={showLaunchOverlay}
+          onClose={() => setShowLaunchOverlay(null)}
+          onLaunch={handleLaunchFinal}
+        />
+      )}
     </div>
   );
 };

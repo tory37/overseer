@@ -53,3 +53,9 @@ export interface Skill {
   description: string;
   content: string;
 }
+
+export interface Repository {
+  id: string;
+  name: string;
+  path: string;
+}

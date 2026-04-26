@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import { app, ipcMain } from 'electron';
+import { app, ipcMain, dialog } from 'electron';
 
 const sessionsPath = path.join(app.getPath('userData'), 'sessions.json');
 const personasPath = path.join(app.getPath('userData'), 'personas.json');
+const reposPath = path.join(app.getPath('userData'), 'repositories.json');
 
 export interface SessionMetadata {
   id: string;
@@ -35,6 +36,12 @@ export interface Persona {
   title: string;
   instructions: string;
   avatarConfig: AvatarConfig;
+}
+
+export interface Repository {
+  id: string;
+  name: string;
+  path: string;
 }
 
 export function saveSessions(sessions: SessionMetadata[]) {
@@ -132,7 +139,7 @@ export const DEFAULT_PERSONAS: Persona[] = [
   },
   {
     id: "yoga",
-    name: "Namaste",
+    name: " Namaste",
     title: "The Yoga Instructor",
     instructions: "You are Namaste, a gentle yoga instructor. You focus on the 'flow' of data and the 'breath' of the system. You want the code to be 'aligned' and 'flexible.' You encourage the user to stay present. 'Exhale the technical debt, inhale the scalable solution. Find your center in the middleware.'",
     avatarConfig: { eyes: "variant01", mouth: "happy01", hair: "long01", skinColor: "fcd5b0", hairColor: "f0c040", backgroundColor: "0f172a", clothingColor: "5bc0de", clothing: "variant01", glasses: "", beard: "", hat: "", accessories: "" }
@@ -178,6 +185,21 @@ export function loadPersonas(): Persona[] {
   }
 }
 
+export function saveRepositories(repos: Repository[]) {
+  fs.writeFileSync(reposPath, JSON.stringify(repos, null, 2));
+}
+
+export function loadRepositories(): Repository[] {
+  if (!fs.existsSync(reposPath)) return [];
+  try {
+    const data = fs.readFileSync(reposPath, 'utf8');
+    return JSON.parse(data);
+  } catch (e) {
+    console.error('Failed to load repositories:', e);
+    return [];
+  }
+}
+
 // IPC Handlers for Store
 ipcMain.handle('store-load-sessions', () => {
   return loadSessions();
@@ -193,4 +215,20 @@ ipcMain.handle('store-load-personas', () => {
 
 ipcMain.on('store-save-personas', (event, personas: Persona[]) => {
   savePersonas(personas);
+});
+
+ipcMain.handle('store-load-repos', () => {
+  return loadRepositories();
+});
+
+ipcMain.on('store-save-repos', (event, repos: Repository[]) => {
+  saveRepositories(repos);
+});
+
+ipcMain.handle('dialog-select-directory', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory']
+  });
+  if (result.canceled) return null;
+  return result.filePaths[0];
 });

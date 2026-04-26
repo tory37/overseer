@@ -8,11 +8,12 @@ const { ipcRenderer } = window.require('electron');
 interface TerminalProps {
   id: string;
   cwd?: string;
+  persona?: string;
   onData?: (data: string) => void;
   onVoice?: (text: string) => void;
 }
 
-export const Terminal: React.FC<TerminalProps> = ({ id, cwd, onData, onVoice }) => {
+export const Terminal: React.FC<TerminalProps> = ({ id, cwd, persona, onData, onVoice }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Xterm>();
   const fitAddonRef = useRef<FitAddon>();
@@ -71,7 +72,12 @@ export const Terminal: React.FC<TerminalProps> = ({ id, cwd, onData, onVoice }) 
       ipcRenderer.send('pty-write', { id, data });
     });
 
-    ipcRenderer.send('pty-create', { id, shell: '/bin/bash', cwd: cwd || process.env.HOME });
+    ipcRenderer.send('pty-create', { 
+      id, 
+      shell: '/bin/bash', 
+      cwd: cwd || process.env.HOME,
+      persona: persona
+    });
 
     xtermRef.current = term;
 
@@ -89,7 +95,7 @@ export const Terminal: React.FC<TerminalProps> = ({ id, cwd, onData, onVoice }) 
       ipcRenderer.removeListener(`pty-data-${id}`, ptyDataListener);
       term.dispose();
     };
-  }, [id, cwd, onData]);
+  }, [id, cwd, persona, onData, onVoice]);
 
   return <div ref={terminalRef} style={{ height: '100%', width: '100%' }} />;
 };
