@@ -8,10 +8,21 @@ import { ResourceLibrary } from './components/ResourceLibrary';
 import { Repositories } from './components/Repositories';
 import { NewSessionOverlay } from './components/NewSessionOverlay';
 import { Settings, Terminal as TerminalIcon, Zap, Bot, FolderOpen } from 'lucide-react';
-import { Repository } from './types';
+import { Repository, CliType, CursorMode } from './types';
 import './index.css';
 
 const { ipcRenderer } = window.require('electron');
+
+function buildCliCommand(cliType: CliType, yoloMode: boolean, allowedTools: string, cursorMode: CursorMode): string {
+  switch (cliType) {
+    case 'gemini':
+      return yoloMode ? 'gemini --approval-mode yolo' : 'gemini';
+    case 'claude':
+      return allowedTools ? `claude --allowedTools "${allowedTools}"` : 'claude';
+    case 'cursor-agent':
+      return `cursor-agent --mode ${cursorMode}${yoloMode ? ' --yolo' : ''}`;
+  }
+}
 
 interface Session {
   id: string;
@@ -19,6 +30,11 @@ interface Session {
   cwd: string;
   isArchived: boolean;
   persona?: string;
+  cliType?: CliType;
+  yoloMode?: boolean;
+  allowedTools?: string;
+  cursorMode?: CursorMode;
+  agentSessionId?: string;
 }
 
 const App = () => {
@@ -68,7 +84,10 @@ const App = () => {
     name: string;
     path: string;
     personaId: string | null;
-    command: string;
+    cliType: CliType;
+    yoloMode: boolean;
+    allowedTools: string;
+    cursorMode: CursorMode;
     isWorktree: boolean;
     worktreeName: string;
     baseBranch: string;
@@ -89,12 +108,16 @@ const App = () => {
     }
 
     const id = `session-${Date.now()}`;
-    const newSession: Session = { 
-      id, 
-      name: config.name, 
-      cwd: finalPath, 
+    const newSession: Session = {
+      id,
+      name: config.name,
+      cwd: finalPath,
       isArchived: false,
-      persona: config.personaId || undefined
+      persona: config.personaId || undefined,
+      cliType: config.cliType,
+      yoloMode: config.yoloMode,
+      allowedTools: config.allowedTools,
+      cursorMode: config.cursorMode,
     };
 
     setSessions([...sessions, newSession]);
@@ -102,11 +125,11 @@ const App = () => {
     setShowLaunchOverlay(null);
     setView('terminal');
 
-    // Small delay to ensure Terminal component is mounted before sending command
+    // Temporary: send CLI command via pty-write after Terminal mounts.
+    // Task 4 will replace this by having pty-create spawn the CLI directly.
     setTimeout(() => {
-      if (config.command) {
-        ipcRenderer.send('pty-write', { id, data: `${config.command}\r` });
-      }
+      const command = buildCliCommand(config.cliType, config.yoloMode, config.allowedTools, config.cursorMode);
+      if (command) ipcRenderer.send('pty-write', { id, data: `${command}\r` });
     }, 500);
   };
 
