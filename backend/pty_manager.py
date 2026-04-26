@@ -42,6 +42,7 @@ class PtyManager:
             "-s", self.tmux_name,
             "-x", str(self.cols),
             "-y", str(self.rows),
+            "-c", self.cwd,
         ]
         for key, val in self.extra_env.items():
             new_session_cmd += ["-e", f"{key}={val}"]
