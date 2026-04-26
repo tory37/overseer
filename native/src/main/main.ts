@@ -3,6 +3,7 @@ import * as path from 'path';
 import isDev from 'electron-is-dev';
 import { PtyManager } from './pty-manager';
 import { setupAdapters } from './adapter-manager';
+import { loadPersonas } from './store'; // Import loadPersonas
 import './store'; // Register store IPC handlers
 import './skills-manager'; // Register skills IPC handlers
 import './agents-manager'; // Register agents IPC handlers
@@ -49,10 +50,21 @@ app.on('activate', () => {
 });
 
 // IPC Handlers for PTY
-ipcMain.on('pty-create', (event, { id, shell, cwd, persona }) => {
+ipcMain.on('pty-create', (event, { id, shell, cwd, persona: personaId }) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) {
-    ptyManager.createSession(id, shell || '/bin/bash', cwd || process.env.HOME || '/', win, persona);
+    let personaInstructions = personaId;
+
+    // If personaId is provided, try to resolve it to instructions
+    if (personaId) {
+      const personas = loadPersonas();
+      const persona = personas.find(p => p.id === personaId);
+      if (persona) {
+        personaInstructions = persona.instructions;
+      }
+    }
+
+    ptyManager.createSession(id, shell || '/bin/bash', cwd || process.env.HOME || '/', win, personaInstructions);
   }
 });
 
