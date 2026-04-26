@@ -50,7 +50,14 @@ const App = () => {
   }, [sessions]);
 
   const handleNewSession = () => {
-    setView('repos');
+    // Default to the first repository or create a placeholder if none exists
+    const defaultRepo: Repository = {
+      id: 'local-cwd',
+      name: 'Local Workspace',
+      path: process.env.HOME || '/',
+      description: 'System default workspace'
+    };
+    setShowLaunchOverlay(defaultRepo);
   };
 
   const handleLaunchSessionFromRepo = (repo: Repository) => {
