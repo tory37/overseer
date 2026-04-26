@@ -9,12 +9,19 @@ interface TerminalProps {
   id: string;
   cwd?: string;
   persona?: string;
+  cliType?: string;
+  yoloMode?: boolean;
+  allowedTools?: string;
+  cursorMode?: string;
+  agentSessionId?: string;
   onData?: (data: string) => void;
   onVoice?: (text: string) => void;
   onActivity?: (isThinking: boolean) => void;
 }
 
-export const Terminal: React.FC<TerminalProps> = ({ id, cwd, persona, onData, onVoice, onActivity }) => {
+export const Terminal: React.FC<TerminalProps> = ({
+  id, cwd, persona, cliType, yoloMode, allowedTools, cursorMode, agentSessionId, onData, onVoice, onActivity
+}) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Xterm>();
   const fitAddonRef = useRef<FitAddon>();
@@ -93,11 +100,15 @@ export const Terminal: React.FC<TerminalProps> = ({ id, cwd, persona, onData, on
       ipcRenderer.send('pty-write', { id, data });
     });
 
-    ipcRenderer.send('pty-create', { 
-      id, 
-      shell: '/bin/bash', 
+    ipcRenderer.send('pty-create', {
+      id,
       cwd: cwd || process.env.HOME,
-      persona: persona
+      persona,
+      cliType,
+      yoloMode,
+      allowedTools,
+      cursorMode,
+      agentSessionId,
     });
 
     xtermRef.current = term;
@@ -117,7 +128,7 @@ export const Terminal: React.FC<TerminalProps> = ({ id, cwd, persona, onData, on
       ipcRenderer.removeListener(`pty-data-${id}`, ptyDataListener);
       term.dispose();
     };
-  }, [id, cwd, persona, onData, onVoice, onActivity]);
+  }, [id, cwd, persona, cliType, yoloMode, allowedTools, cursorMode, agentSessionId, onData, onVoice, onActivity]);
 
   return <div ref={terminalRef} style={{ height: '100%', width: '100%' }} />;
 };

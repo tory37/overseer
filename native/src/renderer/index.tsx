@@ -8,7 +8,7 @@ import { ResourceLibrary } from './components/ResourceLibrary';
 import { Repositories } from './components/Repositories';
 import { NewSessionOverlay } from './components/NewSessionOverlay';
 import { Settings, Terminal as TerminalIcon, Zap, Bot, FolderOpen } from 'lucide-react';
-import { Repository, Persona } from './types';
+import { Repository, Persona, CliType, CursorMode } from './types';
 import './index.css';
 
 const { ipcRenderer } = window.require('electron');
@@ -20,6 +20,11 @@ interface Session {
   isArchived: boolean;
   persona?: string;
   personaConfig?: Persona;
+  cliType?: CliType;
+  yoloMode?: boolean;
+  allowedTools?: string;
+  cursorMode?: CursorMode;
+  agentSessionId?: string;
 }
 
 const App = () => {
@@ -96,7 +101,10 @@ const App = () => {
     name: string;
     path: string;
     personaId: string | null;
-    command: string;
+    cliType: CliType;
+    yoloMode: boolean;
+    allowedTools: string;
+    cursorMode: CursorMode;
     isWorktree: boolean;
     worktreeName: string;
     baseBranch: string;
@@ -117,26 +125,23 @@ const App = () => {
     }
 
     const id = `session-${Date.now()}`;
-    const newSession: Session = { 
-      id, 
-      name: config.name, 
-      cwd: finalPath, 
+    const newSession: Session = {
+      id,
+      name: config.name,
+      cwd: finalPath,
       isArchived: false,
       persona: config.personaId || undefined,
-      personaConfig: personas.find(p => p.id === config.personaId)
+      personaConfig: personas.find(p => p.id === config.personaId),
+      cliType: config.cliType,
+      yoloMode: config.yoloMode,
+      allowedTools: config.allowedTools,
+      cursorMode: config.cursorMode,
     };
 
     setSessions([...sessions, newSession]);
     setActiveId(id);
     setShowLaunchOverlay(null);
     setView('terminal');
-
-    // Small delay to ensure Terminal component is mounted before sending command
-    setTimeout(() => {
-      if (config.command) {
-        ipcRenderer.send('pty-write', { id, data: `${config.command}\r` });
-      }
-    }, 500);
   };
 
   const handleArchiveSession = (id: string) => {
@@ -244,16 +249,24 @@ const App = () => {
         <main className="flex-1 relative overflow-hidden">
           {view === 'terminal' ? (
             <div className="h-full p-4">
-              {activeId && (
-                <Terminal 
-                  key={activeId} 
-                  id={activeId} 
-                  cwd={sessions.find(s => s.id === activeId)?.cwd} 
-                  persona={sessions.find(s => s.id === activeId)?.persona}
-                  onVoice={setVoiceText}
-                  onActivity={setIsThinking}
-                />
-              )}
+              {activeId && (() => {
+                const s = sessions.find(sess => sess.id === activeId);
+                return (
+                  <Terminal
+                    key={activeId}
+                    id={activeId}
+                    cwd={s?.cwd}
+                    persona={s?.persona}
+                    cliType={s?.cliType}
+                    yoloMode={s?.yoloMode}
+                    allowedTools={s?.allowedTools}
+                    cursorMode={s?.cursorMode}
+                    agentSessionId={s?.agentSessionId}
+                    onVoice={setVoiceText}
+                    onActivity={setIsThinking}
+                  />
+                );
+              })()}
             </div>
           ) : view === 'studio' ? (
             <PersonaStudio onPersonaChanged={refreshPersonas} />

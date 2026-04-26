@@ -5,6 +5,10 @@ import { app, ipcMain, dialog } from 'electron';
 const sessionsPath = path.join(app.getPath('userData'), 'sessions.json');
 const personasPath = path.join(app.getPath('userData'), 'personas.json');
 const reposPath = path.join(app.getPath('userData'), 'repositories.json');
+const configPath = path.join(app.getPath('userData'), 'config.json');
+
+export type CliType = 'claude' | 'gemini' | 'cursor-agent';
+export type CursorMode = 'agent' | 'plan' | 'ask';
 
 export interface SessionMetadata {
   id: string;
@@ -13,6 +17,15 @@ export interface SessionMetadata {
   persona?: string;
   lastUsed: number;
   isArchived: boolean;
+  cliType: CliType;
+  agentSessionId?: string;
+  yoloMode?: boolean;
+  allowedTools?: string;
+  cursorMode?: CursorMode;
+}
+
+export interface AppConfig {
+  defaultCli: CliType;
 }
 
 export interface AvatarConfig {
@@ -200,6 +213,19 @@ export function loadRepositories(): Repository[] {
   }
 }
 
+export function loadAppConfig(): AppConfig {
+  if (!fs.existsSync(configPath)) return { defaultCli: 'gemini' };
+  try {
+    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch (e) {
+    return { defaultCli: 'gemini' };
+  }
+}
+
+export function saveAppConfig(config: AppConfig) {
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+}
+
 // IPC Handlers for Store
 ipcMain.handle('store-load-sessions', () => {
   return loadSessions();
@@ -224,6 +250,9 @@ ipcMain.handle('store-load-repos', () => {
 ipcMain.on('store-save-repos', (event, repos: Repository[]) => {
   saveRepositories(repos);
 });
+
+ipcMain.handle('store-load-app-config', () => loadAppConfig());
+ipcMain.on('store-save-app-config', (_event, config: AppConfig) => saveAppConfig(config));
 
 ipcMain.handle('dialog-select-directory', async () => {
   const result = await dialog.showOpenDialog({

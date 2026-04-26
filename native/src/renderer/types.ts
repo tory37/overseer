@@ -37,6 +37,9 @@ export interface Persona {
   avatarConfig: AvatarConfig;
 }
 
+export type CliType = 'claude' | 'gemini' | 'cursor-agent';
+export type CursorMode = 'agent' | 'plan' | 'ask';
+
 export interface SessionMetadata {
   id: string;
   name: string;
@@ -44,6 +47,11 @@ export interface SessionMetadata {
   persona?: string;
   lastUsed: number;
   isArchived: boolean;
+  cliType: CliType;
+  agentSessionId?: string;
+  yoloMode?: boolean;
+  allowedTools?: string;
+  cursorMode?: CursorMode;
 }
 
 export interface Skill {
@@ -58,4 +66,5 @@ export interface Repository {
   id: string;
   name: string;
   path: string;
+  description?: string;
 }

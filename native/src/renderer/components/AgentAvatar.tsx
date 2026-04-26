@@ -6,7 +6,7 @@ import { AvatarConfig } from '../types';
 
 interface AgentAvatarProps {
   avatarConfig: AvatarConfig;
-  state?: 'idle' | 'talking' | 'thinking';
+  state?: 'idle' | 'talking' | 'thinking' | 'auto';
   talkingUntil?: number;
   size?: number;
   className?: string;
